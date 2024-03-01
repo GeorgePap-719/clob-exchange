@@ -8,9 +8,9 @@ package org.example.bitvavo.jvm
 //TODO: add kdocs
 class Exchange {
     private val buyBook = mutableListOf<BuyOrderWithPriority>()
-    private val sellBook = mutableListOf<SellOrder>()
+    private val sellBook = mutableListOf<SellOrderWithPriority>()
 
-    private var priority = 0 // unused
+    private var priority = 0
 
     fun placeBuyOrder(order: BuyOrder) {
         if (sellBook.isEmpty()) {
@@ -31,7 +31,12 @@ class Exchange {
                 if (orderQuantity == sell.quantity) {
                     sellBook.removeAt(index)
                 } else {
-                    sellBook[index] = SellOrder(sell.limitPrice, sell.quantity - order.quantity)
+                    val orderWithPriority = SellOrderWithPriority(
+                        sell.priority,
+                        sell.limitPrice,
+                        sell.quantity - order.quantity
+                    )
+                    sellBook[index] = orderWithPriority
                 }
                 // Break. ----> TODO Improve comment.
                 return
@@ -60,7 +65,16 @@ class Exchange {
         return BuyOrderWithPriority(priority, order.limitPrice, order.quantity)
     }
 
-    fun placeSellOrder() {}
+    fun placeSellOrder(order: SellOrder) {
+        if (buyBook.isEmpty()) {
+            val orderWithPriority
+        }
+    }
+
+    private fun placeInBook(order: SellOrderWithPriority) {
+        sellBook.add(order)
+        sellBook.sortWith(sellBookComparator)
+    }
 
     private fun attachPriority(order: SellOrder): SellOrderWithPriority {
         priority++
@@ -81,15 +95,19 @@ class Exchange {
         val quantity: Int
     )
 
+    private val buyBookComparator =
+        compareByDescending(BuyOrderWithPriority::limitPrice)
+            .thenBy(BuyOrderWithPriority::priority)
+
     private data class SellOrderWithPriority(
         val priority: Int,
         val limitPrice: Int,
         val quantity: Int
     )
 
-    private val buyBookComparator =
-        compareByDescending(BuyOrderWithPriority::limitPrice)
-            .thenBy(BuyOrderWithPriority::priority)
+    private val sellBookComparator =
+        compareBy(SellOrderWithPriority::limitPrice)
+            .thenBy(SellOrderWithPriority::priority)
 }
 
 //TODO: check for bounds based on expected inputs.
