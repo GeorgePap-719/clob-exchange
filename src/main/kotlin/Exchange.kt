@@ -1,30 +1,79 @@
 package org.example.bitvavo.jvm
 
-import java.util.*
-import kotlin.math.roundToInt
-
+/**
+ * Represents a CLOB.
+ */
+// Notes: I have to break the matching order pattern.
+//
+//TODO: add kdocs
 class Exchange {
-    //TODO: add kdocs
-//    private val buyHeap = PriorityQueue<BuyOrderWithPriority> { order1, order2 ->
-//        // I think is not completely right,
-//        //TODO: fix it later.
-//        (order1.limitPrice - order2.limitPrice + order1.priority - order2.priority).roundToInt()
-//    }
-//    //TODO: add kdocs
-//    private val sellHeap = PriorityQueue<BuyOrderWithPriority> { order1, order2 ->
-//        // I think is not completely right,
-//        //TODO: fix it later.
-//        (order1.limitPrice - order2.limitPrice + order1.priority - order2.priority).roundToInt()
-//    }
+    private val buyBook = mutableListOf<BuyOrderWithPriority>()
+    private val sellBook = mutableListOf<SellOrder>()
 
-    private var priority = 0
+    private var priority = 0 // unused
 
     fun placeBuyOrder(order: BuyOrder) {
-        val orderWithPriority = attachPriority(order)
+        if (sellBook.isEmpty()) {
+            val orderWithPriority = attachPriority(order)
+            placeInBook(orderWithPriority)
+            return
+        }
+        var orderQuantity = order.quantity
+        // Try to match aggressively.
+        for ((index, sell) in sellBook.withIndex()) {
+            if (order.limitPrice > sell.limitPrice) continue
+            // Update order
+            //TODO: maybe this will be more readable with `when`.
+            if (orderQuantity <= sell.quantity) {
+                // Call onTrade, to print for success trade.
+                onTrade()
+                // Update sell with new values.
+                if (orderQuantity == sell.quantity) {
+                    sellBook.removeAt(index)
+                } else {
+                    sellBook[index] = SellOrder(sell.limitPrice, sell.quantity - order.quantity)
+                }
+                // Break. ----> TODO Improve comment.
+                return
+            } else {
+                // Call onTrade, to print for success trade.
+                onTrade()
+                orderQuantity -= sell.quantity
+                sellBook.removeAt(index)
+            }
+        }
+        // In case the order was either not fulfilled or completed,
+        // place it in the book.
+        if (orderQuantity > 0) {
+            val orderWithPriority = attachPriority(BuyOrder(order.limitPrice, orderQuantity))
+            placeInBook(orderWithPriority)
+        }
+    }
 
+    private fun placeInBook(order: BuyOrderWithPriority) {
+        buyBook.add(order)
+        buyBook.sortWith(buyBookComparator)
+    }
+
+    private fun attachPriority(order: BuyOrder): BuyOrderWithPriority {
+        priority++
+        return BuyOrderWithPriority(priority, order.limitPrice, order.quantity)
     }
 
     fun placeSellOrder() {}
+
+    private fun attachPriority(order: SellOrder): SellOrderWithPriority {
+        priority++
+        return SellOrderWithPriority(priority, order.limitPrice, order.quantity)
+    }
+
+    fun onTrade() {
+        TODO()
+    }
+
+    fun getBookContents() {
+        TODO()
+    }
 
     private data class BuyOrderWithPriority(
         val priority: Int,
@@ -32,21 +81,15 @@ class Exchange {
         val quantity: Int
     )
 
-    private fun attachPriority(order: BuyOrder): BuyOrderWithPriority {
-        priority++
-        return BuyOrderWithPriority(priority, order.limitPrice, order.quantity)
-    }
-
     private data class SellOrderWithPriority(
         val priority: Int,
         val limitPrice: Int,
         val quantity: Int
     )
 
-    private fun attachPriority(order: SellOrder): SellOrderWithPriority {
-        priority++
-        return SellOrderWithPriority(priority, order.limitPrice, order.quantity)
-    }
+    private val buyBookComparator =
+        compareByDescending(BuyOrderWithPriority::limitPrice)
+            .thenBy(BuyOrderWithPriority::priority)
 }
 
 //TODO: check for bounds based on expected inputs.
@@ -57,3 +100,5 @@ class Exchange {
 data class BuyOrder(val limitPrice: Int, val quantity: Int)
 
 data class SellOrder(val limitPrice: Int, val quantity: Int)
+
+
