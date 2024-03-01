@@ -12,6 +12,7 @@ class Exchange {
 
     private var priority = 0
 
+    //TODO: add kdocs
     fun placeBuyOrder(order: BuyOrder) {
         if (sellBook.isEmpty()) {
             val orderWithPriority = attachPriority(order)
@@ -32,15 +33,16 @@ class Exchange {
                     sellBook.removeAt(index)
                 } else {
                     val orderWithPriority = SellOrderWithPriority(
-                        sell.priority,
-                        sell.limitPrice,
-                        sell.quantity - order.quantity
+                        id = sell.id,
+                        limitPrice = sell.limitPrice,
+                        quantity = sell.quantity - order.quantity,
+                        priority = sell.priority
                     )
                     // Since price and priority stay the same,
                     // there is no need sort the arrayList.
                     sellBook[index] = orderWithPriority
                 }
-                // Break. ----> TODO Improve comment.
+                // The order has been completed.
                 return
             } else {
                 // Call onTrade, to print for success trade.
@@ -52,7 +54,8 @@ class Exchange {
         // In case the order was either not fulfilled or completed,
         // place it in the book.
         if (orderQuantity > 0) {
-            val orderWithPriority = attachPriority(BuyOrder(order.limitPrice, orderQuantity))
+            val buyOrder = BuyOrder(order.id, order.limitPrice, orderQuantity)
+            val orderWithPriority = attachPriority(buyOrder)
             placeInBook(orderWithPriority)
         }
     }
@@ -64,9 +67,15 @@ class Exchange {
 
     private fun attachPriority(order: BuyOrder): BuyOrderWithPriority {
         priority++
-        return BuyOrderWithPriority(priority, order.limitPrice, order.quantity)
+        return BuyOrderWithPriority(
+            id = order.id,
+            limitPrice = order.limitPrice,
+            quantity = order.quantity,
+            priority = priority
+        )
     }
 
+    //TODO: add kdocs
     fun placeSellOrder(order: SellOrder) {
         if (buyBook.isEmpty()) {
             val orderWithPriority = attachPriority(order)
@@ -84,15 +93,16 @@ class Exchange {
                     buyBook.removeAt(index)
                 } else {
                     val orderWithPriority = BuyOrderWithPriority(
-                        buy.priority,
-                        buy.limitPrice,
-                        buy.quantity - orderQuantity
+                        id = buy.id,
+                        limitPrice = buy.limitPrice,
+                        quantity = buy.quantity - orderQuantity,
+                        priority = buy.priority
                     )
                     // Since price and priority stay the same,
                     // there is no need sort the arrayList.
                     buyBook[index] = orderWithPriority
                 }
-                // Break, transaction completed.
+                // The order has been completed.
                 return
             } else {
                 // Call onTrade, to print for success trade.
@@ -104,7 +114,7 @@ class Exchange {
         // In case the order was either not fulfilled or completed,
         // place it in the book. ----> TODO improve comment
         if (orderQuantity > 0) {
-            val sellOrder = SellOrder(order.limitPrice, orderQuantity)
+            val sellOrder = SellOrder(order.id, order.limitPrice, orderQuantity)
             val orderWithPriority = attachPriority(sellOrder)
             placeInBook(orderWithPriority)
         }
@@ -117,7 +127,12 @@ class Exchange {
 
     private fun attachPriority(order: SellOrder): SellOrderWithPriority {
         priority++
-        return SellOrderWithPriority(priority, order.limitPrice, order.quantity)
+        return SellOrderWithPriority(
+            id = order.id,
+            limitPrice = order.limitPrice,
+            quantity = order.quantity,
+            priority = priority
+        )
     }
 
     fun onTrade() {
@@ -129,9 +144,10 @@ class Exchange {
     }
 
     private data class BuyOrderWithPriority(
-        val priority: Int,
+        val id: String,
         val limitPrice: Int,
-        val quantity: Int
+        val quantity: Int,
+        val priority: Int
     )
 
     private val buyBookComparator =
@@ -139,9 +155,10 @@ class Exchange {
             .thenBy(BuyOrderWithPriority::priority)
 
     private data class SellOrderWithPriority(
-        val priority: Int,
+        val id: String,
         val limitPrice: Int,
-        val quantity: Int
+        val quantity: Int,
+        val priority: Int
     )
 
     private val sellBookComparator =
@@ -154,8 +171,8 @@ class Exchange {
 // maybe it can be turned into constrain in constructor,
 // will think about it later.
 // Price max is 999,999
-data class BuyOrder(val limitPrice: Int, val quantity: Int)
+data class BuyOrder(val id: String, val limitPrice: Int, val quantity: Int)
 
-data class SellOrder(val limitPrice: Int, val quantity: Int)
+data class SellOrder(val id: String, val limitPrice: Int, val quantity: Int)
 
 
