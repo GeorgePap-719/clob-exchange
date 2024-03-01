@@ -12,6 +12,8 @@ class Exchange {
 
     private var priority = 0
 
+    private var tradeHandler: TradeHandler? = null
+
     //TODO: add kdocs
     fun placeBuyOrder(order: BuyOrder) {
         if (sellBook.isEmpty()) {
@@ -27,7 +29,7 @@ class Exchange {
             //TODO: maybe this will be more readable with `when`.
             if (orderQuantity <= sell.quantity) {
                 // Call onTrade, to print for success trade.
-                onTrade()
+                invokeTradeHandler("TODO")
                 // Update sell with new values.
                 if (orderQuantity == sell.quantity) {
                     sellBook.removeAt(index)
@@ -46,7 +48,7 @@ class Exchange {
                 return
             } else {
                 // Call onTrade, to print for success trade.
-                onTrade()
+                invokeTradeHandler("TODO")
                 orderQuantity -= sell.quantity
                 sellBook.removeAt(index)
             }
@@ -88,7 +90,7 @@ class Exchange {
             if (order.limitPrice < buy.limitPrice) continue
             if (orderQuantity <= buy.quantity) {
                 // Call onTrade, to print for success trade.
-                onTrade()
+                invokeTradeHandler("TODO")
                 if (orderQuantity == buy.quantity) {
                     buyBook.removeAt(index)
                 } else {
@@ -106,7 +108,7 @@ class Exchange {
                 return
             } else {
                 // Call onTrade, to print for success trade.
-                onTrade()
+                invokeTradeHandler("TODO")
                 orderQuantity -= buy.quantity
                 buyBook.removeAt(index)
             }
@@ -135,9 +137,21 @@ class Exchange {
         )
     }
 
-    fun onTrade() {
-        TODO()
+    private fun invokeTradeHandler(tradeInfo: String /* will think about it */) {
+        val tradeHandler = tradeHandler ?: return
+        tradeHandler(tradeInfo)
     }
+
+    /**
+     * Registers an action to perform when a trade takes place.
+     */
+    // Trade output must indicate the aggressing order-id,
+    // the resting order-id, the price of the match
+    // and the quantity traded, followed by a newline.
+    fun invokeOnTrade(onTrade: (input: String) -> Unit) {
+        tradeHandler = onTrade
+    }
+
 
     fun getBookContents() {
         TODO()
@@ -174,5 +188,7 @@ class Exchange {
 data class BuyOrder(val id: String, val limitPrice: Int, val quantity: Int)
 
 data class SellOrder(val id: String, val limitPrice: Int, val quantity: Int)
+
+private typealias TradeHandler = (input: String) -> Unit
 
 
