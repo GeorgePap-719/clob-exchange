@@ -1,5 +1,14 @@
 plugins {
     kotlin("jvm") version "1.9.22"
+    application
+}
+
+application {
+    mainClass.set("org.example.bitvavo.jvm.MainKt")
+}
+
+tasks.named<JavaExec>("run") {
+    standardInput = System.`in`
 }
 
 group = "org.example"
@@ -16,6 +25,7 @@ dependencies {
 tasks.test {
     useJUnitPlatform()
 }
+
 kotlin {
     jvmToolchain(17)
 }
