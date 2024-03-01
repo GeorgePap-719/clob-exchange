@@ -36,6 +36,8 @@ class Exchange {
                         sell.limitPrice,
                         sell.quantity - order.quantity
                     )
+                    // Since price and priority stay the same,
+                    // there is no need sort the arrayList.
                     sellBook[index] = orderWithPriority
                 }
                 // Break. ----> TODO Improve comment.
@@ -67,7 +69,44 @@ class Exchange {
 
     fun placeSellOrder(order: SellOrder) {
         if (buyBook.isEmpty()) {
-            val orderWithPriority
+            val orderWithPriority = attachPriority(order)
+            placeInBook(orderWithPriority)
+            return
+        }
+        var orderQuantity = order.quantity
+        for ((index, buy) in buyBook.withIndex()) {
+            // Skip lower prices as it is the selle's limit.
+            if (order.limitPrice < buy.limitPrice) continue
+            if (orderQuantity <= buy.quantity) {
+                // Call onTrade, to print for success trade.
+                onTrade()
+                if (orderQuantity == buy.quantity) {
+                    buyBook.removeAt(index)
+                } else {
+                    val orderWithPriority = BuyOrderWithPriority(
+                        buy.priority,
+                        buy.limitPrice,
+                        buy.quantity - orderQuantity
+                    )
+                    // Since price and priority stay the same,
+                    // there is no need sort the arrayList.
+                    buyBook[index] = orderWithPriority
+                }
+                // Break, transaction completed.
+                return
+            } else {
+                // Call onTrade, to print for success trade.
+                onTrade()
+                orderQuantity -= buy.quantity
+                buyBook.removeAt(index)
+            }
+        }
+        // In case the order was either not fulfilled or completed,
+        // place it in the book. ----> TODO improve comment
+        if (orderQuantity > 0) {
+            val sellOrder = SellOrder(order.limitPrice, orderQuantity)
+            val orderWithPriority = attachPriority(sellOrder)
+            placeInBook(orderWithPriority)
         }
     }
 
