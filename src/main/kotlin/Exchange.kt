@@ -24,6 +24,7 @@ class Exchange {
      * Places a [buy-order][BuyOrder] in the book,
      * and tries to find a match using `price time priority`.
      */
+    //TODO: fix kdoc
     fun placeBuyOrder(order: BuyOrder) {
         if (sellBook.isEmpty()) {
             val orderWithPriority = attachPriority(order)
@@ -65,15 +66,13 @@ class Exchange {
                 cleanupIndexesInSellBook(indexesToRemove)
                 return
             } else {
-                // Call onTrade, to print for success trade.
                 invokeTradeHandler(output)
                 orderQuantity -= sell.quantity
                 indexesToRemove.add(index)
             }
         }
-        // Any remaining quantity, either in case there is no match
-        // or the order has leftovers, place the order in the book
-        // for future matching.
+        // Any remaining order quantity, either in case there is no match
+        // or the order has leftovers, place it the order book for future matching.
         if (orderQuantity > 0) {
             val buyOrder = BuyOrder(order.id, order.limitPrice, orderQuantity)
             val orderWithPriority = attachPriority(buyOrder)
@@ -113,6 +112,7 @@ class Exchange {
      * Places a [sell-order][SellOrder] in the book,
      * and tries to find a match using `price time priority`.
      */
+    //TODO: fix kdoc
     fun placeSellOrder(order: SellOrder) {
         if (buyBook.isEmpty()) {
             val orderWithPriority = attachPriority(order)
@@ -197,7 +197,6 @@ class Exchange {
         )
     }
 
-    //TODO: is this redundant?
     private fun createTrade(
         aggressingOrder: Order,
         restingOrder: Order
@@ -209,10 +208,10 @@ class Exchange {
     }
 
     /**
-     * Registers an action to perform when a trade takes place.
+     * Registers a [handler] to invoke when a trade takes place.
      */
-    fun invokeOnTrade(action: (input: Trade) -> Unit) {
-        tradeHandler = action
+    fun invokeOnTrade(handler: (input: Trade) -> Unit) {
+        tradeHandler = handler
     }
 
     /**
@@ -265,10 +264,9 @@ data class SellOrder(
 ) : Order
 
 /**
- * A class to make passing and asserting data easier.
- * TODO kdocs
+ * Represents a completed trade.
+ * This class is created to make passing and asserting trade-data easier.
  */
-@Suppress("MemberVisibilityCanBePrivate")
 data class Trade(val aggressingOrder: Order, val restingOrder: Order) {
     // Trade output must indicate the aggressing order-id,
     // the resting order-id, the price of the match
@@ -285,7 +283,8 @@ data class Trade(val aggressingOrder: Order, val restingOrder: Order) {
         return output
     }
 
-    //TODO: add comment about this override.
+    // We care only for the actual content of each trade,
+    // not if they represent the same implementation.
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (javaClass != other?.javaClass) return false
@@ -306,9 +305,15 @@ data class Trade(val aggressingOrder: Order, val restingOrder: Order) {
     }
 }
 
-// A marker interface
+/**
+ * Represents an order to be placed in the exchange.
+ * This interface is created to support the creation of [Trade] class.
+ */
 interface Order {
     val id: String
+    /**
+     * Represents the worst possible price the trader will trade at.
+     */
     val limitPrice: Int
     val quantity: Int
 }
