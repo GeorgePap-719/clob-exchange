@@ -3,10 +3,13 @@ package org.example.bitvavo.jvm
 import java.text.NumberFormat
 
 /**
- * Represents a CLOB.
+ * Represents an exchange kind of central limit order book, where orders are matched using `price time priority`.
+ * This means orders are matched by the order of price and then by the arrival time in the book.
+ *
+ * Exchange trades only occur during the processing of a newly posted order, and happen immediately.
+ *
+ * The functions in this class are **not thread-safe**.
  */
-// The function are not thread-safe.
-//TODO: add kdocs
 class Exchange {
     private val buyBook = mutableListOf<BuyOrderWithPriority>()
     private val sellBook = mutableListOf<SellOrderWithPriority>()
@@ -28,7 +31,7 @@ class Exchange {
         // Try to match aggressively.
         for (index in 0..<sellBook.size) {
             val sell = sellBook[index]
-            // Skip higher prices as it is the buyer's limit.
+            // Skip higher prices as they pass buyer's limit.
             if (order.limitPrice < sell.limitPrice) continue
             val output = createTrade(
                 BuyOrder(
