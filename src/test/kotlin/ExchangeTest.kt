@@ -1,7 +1,6 @@
 package org.example.bitvavo.jvm
 
 import kotlin.test.Test
-import kotlin.test.asserter
 import kotlin.test.fail
 
 class ExchangeTest {
@@ -18,9 +17,11 @@ class ExchangeTest {
         exchange.placeBuyOrders(buyOrders)
     }
 
-    // Buy 1000 @ 99 is matched first (as it is the oldest order at the highest price level)
-    // Buy 500 @ 99 is matched second (as it is at the highest price level and arrived after the
-    // Buy 1000 @ 99 order)
+    // - Buy 1000 @ 99 is matched first (as it is the oldest order at the highest price level)
+    // - Buy 500 @ 99 is matched second (as it is at the highest price level and arrived after the
+    //   Buy 1000 @ 99 order)
+    // - Buy 500 @ 98 is matched third (as it is at a lower price. This partially fills the
+    //   resting order of 1200, leaving 700 in the order book)
     @Test
     fun testBasicScenario2() {
         val exchange = Exchange()
