@@ -3,12 +3,13 @@ package org.example.bitvavo.jvm
 import java.text.NumberFormat
 
 /**
- * Represents an exchange kind of central limit order book, where orders are matched using `price time priority`.
+ * Represents an exchange, type of central limit order book, where orders are matched using `price time priority`.
  * This means orders are matched by the order of price and then by the arrival time in the book.
  *
  * Exchange trades only occur during the processing of a newly posted order, and happen immediately.
- *
- * The functions in this class are **not thread-safe**.
+ * As orders are placed in the exchange, they are considered for aggressive matching first against
+ * the opposite side of the book. Once this is completed, any remaining order quantity will
+ * rest on their own side of the book.
  */
 class Exchange {
     private val buyBook = mutableListOf<BuyOrderWithPriority>()
@@ -19,7 +20,10 @@ class Exchange {
 
     private var tradeHandler: TradeHandler? = null
 
-    //TODO: add kdocs
+    /**
+     * Places a [buy-order][BuyOrder] in the book,
+     * and tries to find a match using `price time priority`.
+     */
     fun placeBuyOrder(order: BuyOrder) {
         if (sellBook.isEmpty()) {
             val orderWithPriority = attachPriority(order)
@@ -67,8 +71,9 @@ class Exchange {
                 indexesToRemove.add(index)
             }
         }
-        // In this case order has leftover quantities,
-        // place order in the book, for future matching.
+        // Any remaining quantity, either in case there is no match
+        // or the order has leftovers, place the order in the book
+        // for future matching.
         if (orderQuantity > 0) {
             val buyOrder = BuyOrder(order.id, order.limitPrice, orderQuantity)
             val orderWithPriority = attachPriority(buyOrder)
@@ -104,7 +109,10 @@ class Exchange {
         )
     }
 
-    //TODO: add kdocs
+    /**
+     * Places a [sell-order][SellOrder] in the book,
+     * and tries to find a match using `price time priority`.
+     */
     fun placeSellOrder(order: SellOrder) {
         if (buyBook.isEmpty()) {
             val orderWithPriority = attachPriority(order)
@@ -151,8 +159,9 @@ class Exchange {
                 indexesToRemove.add(index)
             }
         }
-        // In this case order has leftover quantities, // TODO --> this includes the case where we do not have match in price.
-        // place order in the book, for future matching.
+        // Any remaining quantity, either in case there is no match
+        // or the order has leftovers, place the order in the book
+        // for future matching.
         if (orderQuantity > 0) {
             val sellOrder = SellOrder(order.id, order.limitPrice, orderQuantity)
             val orderWithPriority = attachPriority(sellOrder)
