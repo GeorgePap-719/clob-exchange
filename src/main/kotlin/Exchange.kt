@@ -28,7 +28,7 @@ class Exchange {
             val sell = sellBook[index]
             // Skip higher prices as it is the buyer's limit.
             if (order.limitPrice < sell.limitPrice) continue
-            val output = createTradeOutput(
+            val output = createTrade(
                 BuyOrder(
                     id = order.id,
                     limitPrice = order.limitPrice,
@@ -110,7 +110,7 @@ class Exchange {
             val buy = buyBook[index]
             // Skip lower prices as it is the seller's limit.
             if (order.limitPrice > buy.limitPrice) continue
-            val output = createTradeOutput(
+            val output = createTrade(
                 SellOrder(
                     id = order.id,
                     limitPrice = order.limitPrice,
@@ -180,34 +180,23 @@ class Exchange {
     //and the quantity traded, followed by a newline.
     // format: trade 10006,10001,100,500
     //TODO: verify if price is correct.
-    private fun createTradeOutput(
+    private fun createTrade(
         aggressingOrder: Order,
         restingOrder: Order
-    ): String {
-        val quantity = if (aggressingOrder.quantity > restingOrder.quantity) {
-            restingOrder.quantity
-        } else {
-            aggressingOrder.quantity
-        }
-        val output = """
-            trade ${aggressingOrder.id}, ${restingOrder.id}, ${aggressingOrder.limitPrice}, $quantity
-        """.trimIndent()
-        return output
+    ): Trade {
+        return Trade(aggressingOrder, restingOrder)
     }
 
-    private fun invokeTradeHandler(tradeOutput: String) {
+    private fun invokeTradeHandler(trade: Trade) {
         val tradeHandler = tradeHandler ?: return
-        tradeHandler(tradeOutput)
+        tradeHandler(trade)
     }
 
     /**
      * Registers an action to perform when a trade takes place.
      */
-    // Trade output must indicate the aggressing order-id,
-    // the resting order-id, the price of the match
-    // and the quantity traded, followed by a newline.
-    fun invokeOnTrade(onTrade: (input: String) -> Unit) {
-        tradeHandler = onTrade
+    fun invokeOnTrade(action: (input: Trade) -> Unit) {
+        tradeHandler = action
     }
 
 
@@ -235,14 +224,30 @@ data class SellOrder(
 
 /**
  * A class to make passing and asserting data easier.
- * TODO
+ * TODO kdocs
  */
-class Trade()
+@Suppress("MemberVisibilityCanBePrivate")
+class Trade(val aggressingOrder: Order, val restingOrder: Order) {
+    // Trade output must indicate the aggressing order-id,
+    // the resting order-id, the price of the match
+    // and the quantity traded, followed by a newline.
+    override fun toString(): String {
+        val quantity = if (aggressingOrder.quantity > restingOrder.quantity) {
+            restingOrder.quantity
+        } else {
+            aggressingOrder.quantity
+        }
+        val output = """
+            trade ${aggressingOrder.id}, ${restingOrder.id}, ${aggressingOrder.limitPrice}, $quantity
+        """.trimIndent()
+        return output
+    }
+}
 
 // --- utils ---
 
 // A marker interface
-private interface Order {
+interface Order {
     val id: String
     val limitPrice: Int
     val quantity: Int
@@ -262,4 +267,4 @@ private data class SellOrderWithPriority(
     val priority: Int
 ) : Order
 
-private typealias TradeHandler = (input: String) -> Unit
+private typealias TradeHandler = (input: Trade) -> Unit

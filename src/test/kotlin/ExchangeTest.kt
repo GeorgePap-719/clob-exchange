@@ -37,7 +37,6 @@ class ExchangeTest {
         sellOrder = SellOrder("12345", 95, 2000)
         exchange.placeSellOrder(sellOrder)
     }
-
 }
 
 // --- batches ---
