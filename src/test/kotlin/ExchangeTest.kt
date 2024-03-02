@@ -36,11 +36,6 @@ class ExchangeTest {
         exchange.placeSellOrders(sellOrders)
     }
 
-    // - Buy 1000 @ 99 is matched first (as it is the oldest order at the highest price level)
-    // - Buy 500 @ 99 is matched second (as it is at the highest price level and arrived after the
-    //   Buy 1000 @ 99 order)
-    // - Buy 500 @ 98 is matched third (as it is at a lower price. This partially fills the
-    //   resting order of 1200, leaving 700 in the order book)
     @Test
     fun testMatchingSellEvent() {
         val exchange = Exchange()
@@ -50,19 +45,17 @@ class ExchangeTest {
             BuyOrder("12", 99, 500),
             BuyOrder("123", 98, 1200)
         )
+        val sellOrder1 = SellOrder("1234", 101, 2000)
+        exchange.placeBuyOrders(buyOrders)
+        exchange.placeSellOrder(sellOrder1)
+        val actualTrades = mutableListOf<Trade>()
+        exchange.invokeOnTrade { actualTrades.add(it) }
         val sellOrder2 = SellOrder("12345", 95, 2000)
-        val sellOrder2AfterFirstSell = SellOrder("12345", 95, 1000)
-        val sellOrder2AfterSecondSell = SellOrder("12345", 95, 500)
         val expectedTrades = listOf(
             Trade(sellOrder2, buyOrders[0]),
-            Trade(sellOrder2AfterFirstSell, buyOrders[1]),
-            Trade(sellOrder2AfterSecondSell, buyOrders[2]),
+            Trade(SellOrder("12345", 95, 1000), buyOrders[1]),
+            Trade(SellOrder("12345", 95, 500), buyOrders[2]),
         )
-        val actualTrades = mutableListOf<Trade>()
-        exchange.placeBuyOrders(buyOrders)
-        val sellOrder1 = SellOrder("1234", 101, 2000)
-        exchange.placeSellOrder(sellOrder1)
-        exchange.invokeOnTrade { actualTrades.add(it) }
         exchange.placeSellOrder(sellOrder2)
         assertTradesMatch(expectedTrades, actualTrades)
     }
@@ -84,12 +77,17 @@ class ExchangeTest {
         exchange.placeBuyOrders(buyOrders)
         exchange.placeSellOrders(sellOrders)
         val actualTrades = mutableListOf<Trade>()
-        exchange.invokeOnTrade {
-            actualTrades.add(it)
-            println(it.tradeOutput())
-        }
+        exchange.invokeOnTrade { actualTrades.add(it) }
         val buyOrder = BuyOrder("10006", 105, 16000)
         exchange.placeBuyOrder(buyOrder)
+        val expectedTrades = listOf(
+            Trade(buyOrder, sellOrders[1]),
+            Trade(BuyOrder("10006", 105, 15500), sellOrders[2]),
+            Trade(BuyOrder("10006", 105, 5500), sellOrders[3]),
+            Trade(BuyOrder("10006", 105, 5400), sellOrders[0]),
+
+            )
+        assertTradesMatch(expectedTrades, actualTrades)
     }
 
     @Test
