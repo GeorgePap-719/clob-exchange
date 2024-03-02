@@ -101,7 +101,7 @@ class Exchange {
         for (index in 0..<buyBook.size) {
             val buy = buyBook[index]
             // Skip lower prices as it is the seller's limit.
-            if (order.limitPrice < buy.limitPrice) continue
+            if (order.limitPrice > buy.limitPrice) continue
             val output = createTradeOutput(
                 SellOrder(
                     id = order.id,
