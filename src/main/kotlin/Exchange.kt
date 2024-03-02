@@ -75,7 +75,11 @@ class Exchange {
     }
 
     private fun cleanupIndexesInSellBook(indexes: List<Int>) {
-        for (index in indexes) sellBook.removeAt(index)
+        var removed = 0
+        for (index in indexes) {
+            sellBook.removeAt(index - removed)
+            removed++
+        }
     }
 
     private fun placeInBook(order: BuyOrderWithPriority) {
@@ -155,7 +159,11 @@ class Exchange {
     }
 
     private fun cleanupIndexesInBuyBook(indexes: List<Int>) {
-        for (index in indexes) buyBook.removeAt(index)
+        var removed = 0
+        for (index in indexes) {
+            buyBook.removeAt(index - removed)
+            removed++
+        }
     }
 
     private fun placeInBook(order: SellOrderWithPriority) {
@@ -177,10 +185,7 @@ class Exchange {
         )
     }
 
-    // Trade output must indicate the aggressing order-id,
-    // the resting order-id, the price of the match
-    //and the quantity traded, followed by a newline.
-    // format: trade 10006,10001,100,500
+    //TODO: is this redundant?
     private fun createTrade(
         aggressingOrder: Order,
         restingOrder: Order
@@ -198,11 +203,17 @@ class Exchange {
         tradeHandler = action
     }
 
+    /**
+     * Returns a [String] that represents the order's book output.
+     * It follows a format of: "000,000,000 000000 | 000000 000,000,000", and when a value is too
+     * small to cover the reserved area is padded with spaces.
+     */
     fun getOrderBookOutput(): String {
         val formatter = NumberFormat.getIntegerInstance()
         val builder = StringBuilder()
         var buyBookIndex = 0
         var sellBookIndex = 0
+        // Maybe this can be improved?, TODO if there is enough time
         while (buyBookIndex < buyBook.size || sellBookIndex < sellBook.size) {
             val buy = if (buyBookIndex < buyBook.size) buyBook[buyBookIndex] else null
             var buyQuantityFormat = buy?.let { formatter.format(buy.quantity) } ?: ""
@@ -282,8 +293,6 @@ data class Trade(val aggressingOrder: Order, val restingOrder: Order) {
         return result
     }
 }
-
-// --- utils ---
 
 // A marker interface
 interface Order {

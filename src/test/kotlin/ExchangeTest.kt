@@ -9,13 +9,31 @@ class ExchangeTest {
     @Test
     fun testNoMatchScenario() {
         val exchange = Exchange()
-        exchange.invokeOnTrade { fail("A trade should not happen") }
+        exchange.assertNoTradeIsHappening()
         val buyOrders = listOf(
             BuyOrder("1", 99, 1000),
             BuyOrder("12", 99, 500),
             BuyOrder("123", 98, 1200)
         )
         exchange.placeBuyOrders(buyOrders)
+    }
+
+    @Test
+    fun testNoMatchScenario2() {
+        val exchange = Exchange()
+        exchange.assertNoTradeIsHappening()
+        val buyOrders = listOf(
+            BuyOrder("10000", 98, 25500),
+            BuyOrder("10003", 99, 50000),
+        )
+        val sellOrders = listOf(
+            SellOrder("10005", 105, 20000),
+            SellOrder("10001", 100, 500),
+            SellOrder("10002", 100, 10000),
+            SellOrder("10004", 103, 100)
+        )
+        exchange.placeBuyOrders(buyOrders)
+        exchange.placeSellOrders(sellOrders)
     }
 
     // - Buy 1000 @ 99 is matched first (as it is the oldest order at the highest price level)
@@ -26,6 +44,7 @@ class ExchangeTest {
     @Test
     fun testMatchingSellEvent() {
         val exchange = Exchange()
+        exchange.assertNoTradeIsHappening()
         val buyOrders = listOf(
             BuyOrder("1", 99, 1000),
             BuyOrder("12", 99, 500),
@@ -40,12 +59,37 @@ class ExchangeTest {
             Trade(sellOrder2AfterSecondSell, buyOrders[2]),
         )
         val actualTrades = mutableListOf<Trade>()
-        exchange.invokeOnTrade { actualTrades.add(it) }
         exchange.placeBuyOrders(buyOrders)
         val sellOrder1 = SellOrder("1234", 101, 2000)
         exchange.placeSellOrder(sellOrder1)
+        exchange.invokeOnTrade { actualTrades.add(it) }
         exchange.placeSellOrder(sellOrder2)
         assertTradesMatch(expectedTrades, actualTrades)
+    }
+
+    @Test
+    fun testMatchingBuyEvent() {
+        val exchange = Exchange()
+        exchange.assertNoTradeIsHappening()
+        val buyOrders = listOf(
+            BuyOrder("10000", 98, 25500),
+            BuyOrder("10003", 99, 50000),
+        )
+        val sellOrders = listOf(
+            SellOrder("10005", 105, 20000),
+            SellOrder("10001", 100, 500),
+            SellOrder("10002", 100, 10000),
+            SellOrder("10004", 103, 100)
+        )
+        exchange.placeBuyOrders(buyOrders)
+        exchange.placeSellOrders(sellOrders)
+        val actualTrades = mutableListOf<Trade>()
+        exchange.invokeOnTrade {
+            actualTrades.add(it)
+            println(it.tradeOutput())
+        }
+        val buyOrder = BuyOrder("10006", 105, 16000)
+        exchange.placeBuyOrder(buyOrder)
     }
 
     @Test
@@ -67,6 +111,10 @@ class ExchangeTest {
     }
 }
 
+private fun Exchange.assertNoTradeIsHappening() {
+    invokeOnTrade { fail("A trade should not happen") }
+}
+
 private fun assertTradesMatch(expected: List<Trade>, actual: List<Trade>) {
     if (actual.size > expected.size) {
         fail("Actual trades are more than the expected-size:${expected.size}")
@@ -80,4 +128,8 @@ private fun assertTradesMatch(expected: List<Trade>, actual: List<Trade>) {
 
 fun Exchange.placeBuyOrders(orders: List<BuyOrder>) {
     for (order in orders) placeBuyOrder(order)
+}
+
+fun Exchange.placeSellOrders(orders: List<SellOrder>) {
+    for (order in orders) placeSellOrder(order)
 }
