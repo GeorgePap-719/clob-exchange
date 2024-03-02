@@ -38,9 +38,7 @@ class Exchange {
             )
             //TODO: maybe this will be more readable with `when`.
             if (orderQuantity <= sell.quantity) {
-                // Update order
                 invokeTradeHandler(output)
-                // Update sell with new values.
                 if (orderQuantity == sell.quantity) {
                     indexesToRemove.add(index)
                 } else {
@@ -55,7 +53,7 @@ class Exchange {
                     sellBook[index] = orderWithPriority
                 }
                 // The order has been completed.
-                indexesToRemove.forEach { sellBook.removeAt(it)}
+                cleanupIndexesInSellBook(indexesToRemove)
                 return
             } else {
                 // Call onTrade, to print for success trade.
@@ -71,7 +69,11 @@ class Exchange {
             val orderWithPriority = attachPriority(buyOrder)
             placeInBook(orderWithPriority)
         }
-        indexesToRemove.forEach { sellBook.removeAt(it)}
+        cleanupIndexesInSellBook(indexesToRemove)
+    }
+
+    private fun cleanupIndexesInSellBook(indexes: List<Int>) {
+        for (index in indexes) sellBook.removeAt(index)
     }
 
     private fun placeInBook(order: BuyOrderWithPriority) {
@@ -132,7 +134,7 @@ class Exchange {
                     buyBook[index] = orderWithPriority
                 }
                 // The order has been completed.
-                indexesToRemove.forEach { buyBook.removeAt(it)}
+                cleanupIndexesInBuyBook(indexesToRemove)
                 return
             } else {
                 invokeTradeHandler(output)
@@ -147,8 +149,11 @@ class Exchange {
             val orderWithPriority = attachPriority(sellOrder)
             placeInBook(orderWithPriority)
         }
-        // Cleanup.
-        indexesToRemove.forEach { buyBook.removeAt(it)}
+        cleanupIndexesInBuyBook(indexesToRemove)
+    }
+
+    private fun cleanupIndexesInBuyBook(indexes: List<Int>) {
+        for (index in indexes) buyBook.removeAt(index)
     }
 
     private fun placeInBook(order: SellOrderWithPriority) {
@@ -229,7 +234,7 @@ data class SellOrder(
 ) : Order
 
 /**
- * A class to make passing, asserting data easier.
+ * A class to make passing and asserting data easier.
  * TODO
  */
 class Trade()
