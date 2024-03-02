@@ -159,9 +159,8 @@ class Exchange {
                 indexesToRemove.add(index)
             }
         }
-        // Any remaining quantity, either in case there is no match
-        // or the order has leftovers, place the order in the book
-        // for future matching.
+        // Any remaining order quantity, either in case there is no match
+        // or the order has leftovers, place it the order book for future matching.
         if (orderQuantity > 0) {
             val sellOrder = SellOrder(order.id, order.limitPrice, orderQuantity)
             val orderWithPriority = attachPriority(sellOrder)
