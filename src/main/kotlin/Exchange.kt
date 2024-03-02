@@ -98,7 +98,8 @@ class Exchange {
         }
         var orderQuantity = order.quantity
         // Try to match aggressively.
-        for ((index, buy) in buyBook.withIndex()) {
+        for (index in 0..<buyBook.size) {
+            val buy = buyBook[index]
             // Skip lower prices as it is the seller's limit.
             if (order.limitPrice < buy.limitPrice) continue
             val output = createTradeOutput(
@@ -127,9 +128,10 @@ class Exchange {
                 // The order has been completed.
                 return
             } else {
-                // Call onTrade, to print for success trade.
                 invokeTradeHandler(output)
                 orderQuantity -= buy.quantity
+                //TODO: what happens in the collection,
+                // we remove this?
                 buyBook.removeAt(index)
             }
         }
@@ -170,14 +172,18 @@ class Exchange {
         aggressingOrder: Order,
         restingOrder: Order
     ): String {
-        val quantity = aggressingOrder.quantity - restingOrder.quantity
+        val quantity = if (aggressingOrder.quantity > restingOrder.quantity) {
+            restingOrder.quantity
+        } else {
+            aggressingOrder.quantity
+        }
         val output = """
             trade ${aggressingOrder.id}, ${restingOrder.id}, ${aggressingOrder.limitPrice}, $quantity
         """.trimIndent()
         return output
     }
 
-    private fun invokeTradeHandler(tradeOutput: String /* will think about it */) {
+    private fun invokeTradeHandler(tradeOutput: String) {
         val tradeHandler = tradeHandler ?: return
         tradeHandler(tradeOutput)
     }
@@ -214,6 +220,12 @@ data class SellOrder(
     override val limitPrice: Int,
     override val quantity: Int
 ) : Order
+
+/**
+ * A class to make passing, asserting data easier.
+ * TODO
+ */
+class Trade()
 
 // --- utils ---
 
