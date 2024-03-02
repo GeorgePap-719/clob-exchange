@@ -4,12 +4,13 @@ package org.example.bitvavo.jvm
  * Represents a CLOB.
  */
 // Notes: I have to break the matching order pattern.
-//
+// The function are not thread-safe.
 //TODO: add kdocs
 class Exchange {
     private val buyBook = mutableListOf<BuyOrderWithPriority>()
     private val sellBook = mutableListOf<SellOrderWithPriority>()
 
+    //TODO: add kdocs
     private var priority = 0
 
     private var tradeHandler: TradeHandler? = null
@@ -66,6 +67,10 @@ class Exchange {
         buyBook.add(order)
         buyBook.sortWith(buyBookComparator)
     }
+
+    private val buyBookComparator =
+        compareByDescending(BuyOrderWithPriority::limitPrice)
+            .thenBy(BuyOrderWithPriority::priority)
 
     private fun attachPriority(order: BuyOrder): BuyOrderWithPriority {
         priority++
@@ -127,6 +132,10 @@ class Exchange {
         sellBook.sortWith(sellBookComparator)
     }
 
+    private val sellBookComparator =
+        compareBy(SellOrderWithPriority::limitPrice)
+            .thenBy(SellOrderWithPriority::priority)
+
     private fun attachPriority(order: SellOrder): SellOrderWithPriority {
         priority++
         return SellOrderWithPriority(
@@ -156,28 +165,6 @@ class Exchange {
     fun getBookContents() {
         TODO()
     }
-
-    private data class BuyOrderWithPriority(
-        val id: String,
-        val limitPrice: Int,
-        val quantity: Int,
-        val priority: Int
-    )
-
-    private val buyBookComparator =
-        compareByDescending(BuyOrderWithPriority::limitPrice)
-            .thenBy(BuyOrderWithPriority::priority)
-
-    private data class SellOrderWithPriority(
-        val id: String,
-        val limitPrice: Int,
-        val quantity: Int,
-        val priority: Int
-    )
-
-    private val sellBookComparator =
-        compareBy(SellOrderWithPriority::limitPrice)
-            .thenBy(SellOrderWithPriority::priority)
 }
 
 //TODO: check for bounds based on expected inputs.
@@ -189,6 +176,20 @@ data class BuyOrder(val id: String, val limitPrice: Int, val quantity: Int)
 
 data class SellOrder(val id: String, val limitPrice: Int, val quantity: Int)
 
+// --- utils ---
+
+private data class BuyOrderWithPriority(
+    val id: String,
+    val limitPrice: Int,
+    val quantity: Int,
+    val priority: Int
+)
+
+private data class SellOrderWithPriority(
+    val id: String,
+    val limitPrice: Int,
+    val quantity: Int,
+    val priority: Int
+)
+
 private typealias TradeHandler = (input: String) -> Unit
-
-
