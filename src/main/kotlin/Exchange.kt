@@ -227,11 +227,11 @@ data class SellOrder(
  * TODO kdocs
  */
 @Suppress("MemberVisibilityCanBePrivate")
-class Trade(val aggressingOrder: Order, val restingOrder: Order) {
+data class Trade(val aggressingOrder: Order, val restingOrder: Order) {
     // Trade output must indicate the aggressing order-id,
     // the resting order-id, the price of the match
     // and the quantity traded, followed by a newline.
-    override fun toString(): String {
+    fun tradeOutput(): String {
         val quantity = if (aggressingOrder.quantity > restingOrder.quantity) {
             restingOrder.quantity
         } else {
@@ -241,6 +241,26 @@ class Trade(val aggressingOrder: Order, val restingOrder: Order) {
             trade ${aggressingOrder.id}, ${restingOrder.id}, ${aggressingOrder.limitPrice}, $quantity
         """.trimIndent()
         return output
+    }
+
+    //TODO: add comment about this override.
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (javaClass != other?.javaClass) return false
+        other as Trade
+        if (aggressingOrder.id != other.aggressingOrder.id) return false
+        if (aggressingOrder.limitPrice != other.aggressingOrder.limitPrice) return false
+        if (aggressingOrder.quantity != other.aggressingOrder.quantity) return false
+        if (restingOrder.id != other.restingOrder.id) return false
+        if (restingOrder.limitPrice != other.restingOrder.limitPrice) return false
+        if (restingOrder.quantity != other.restingOrder.quantity) return false
+        return true
+    }
+
+    override fun hashCode(): Int {
+        var result = aggressingOrder.hashCode()
+        result = 31 * result + restingOrder.hashCode()
+        return result
     }
 }
 
