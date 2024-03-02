@@ -268,7 +268,7 @@ data class Trade(val aggressingOrder: Order, val restingOrder: Order) {
             aggressingOrder.quantity
         }
         val output = """
-            trade ${aggressingOrder.id}, ${restingOrder.id}, ${aggressingOrder.limitPrice}, $quantity
+            trade ${aggressingOrder.id}, ${restingOrder.id}, ${restingOrder.limitPrice}, $quantity
         """.trimIndent()
         return output
     }
