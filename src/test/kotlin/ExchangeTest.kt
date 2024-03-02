@@ -47,6 +47,24 @@ class ExchangeTest {
         exchange.placeSellOrder(sellOrder2)
         assertTradesMatch(expectedTrades, actualTrades)
     }
+
+    @Test
+    fun testOrderBookOutput() {
+        val exchange = Exchange()
+        val buyOrders = listOf(
+            BuyOrder("1", 99, 50000),
+            BuyOrder("12", 99, 500),
+            BuyOrder("123", 98, 1200),
+            BuyOrder("1235", 1, 1200)
+        )
+        exchange.placeBuyOrders(buyOrders)
+        val sellOrder1 = SellOrder("1234", 101, 2000)
+        exchange.placeSellOrder(sellOrder1)
+        val sellOrder2 = SellOrder("12345", 95, 2000)
+        exchange.placeSellOrder(sellOrder2)
+        val output = exchange.getOrderBookOutput()
+        println(output)
+    }
 }
 
 private fun assertTradesMatch(expected: List<Trade>, actual: List<Trade>) {

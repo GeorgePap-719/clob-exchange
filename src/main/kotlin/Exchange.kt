@@ -1,5 +1,7 @@
 package org.example.bitvavo.jvm
 
+import java.text.NumberFormat
+
 /**
  * Represents a CLOB.
  */
@@ -179,13 +181,10 @@ class Exchange {
     // the resting order-id, the price of the match
     //and the quantity traded, followed by a newline.
     // format: trade 10006,10001,100,500
-    //TODO: verify if price is correct.
     private fun createTrade(
         aggressingOrder: Order,
         restingOrder: Order
-    ): Trade {
-        return Trade(aggressingOrder, restingOrder)
-    }
+    ): Trade = Trade(aggressingOrder, restingOrder)
 
     private fun invokeTradeHandler(trade: Trade) {
         val tradeHandler = tradeHandler ?: return
@@ -199,9 +198,29 @@ class Exchange {
         tradeHandler = action
     }
 
-
-    fun getBookContents() {
-        TODO()
+    fun getOrderBookOutput(): String {
+        val formatter = NumberFormat.getIntegerInstance()
+        val builder = StringBuilder()
+        var buyBookIndex = 0
+        var sellBookIndex = 0
+        while (buyBookIndex < buyBook.size || sellBookIndex < sellBook.size) {
+            val buy = if (buyBookIndex < buyBook.size) buyBook[buyBookIndex] else null
+            var buyQuantityFormat = buy?.let { formatter.format(buy.quantity) } ?: ""
+            buyQuantityFormat = buyQuantityFormat.padStart(9)
+            var buyPriceFormat = buy?.let { formatter.format(buy.limitPrice) } ?: ""
+            buyPriceFormat = buyPriceFormat.padStart(6)
+            val sell = if (sellBookIndex < sellBook.size) sellBook[sellBookIndex] else null
+            var sellQuantityFormat = sell?.let { formatter.format(sell.quantity) } ?: ""
+            sellQuantityFormat = sellQuantityFormat.padEnd(9)
+            var sellPriceFormat = sell?.let { formatter.format(sell.limitPrice) } ?: ""
+            sellPriceFormat = sellPriceFormat.padEnd(6)
+            val output = "$buyQuantityFormat $buyPriceFormat | $sellPriceFormat $sellQuantityFormat"
+            builder.append(output)
+            builder.append("\n")
+            buyBookIndex++
+            sellBookIndex++
+        }
+        return builder.toString()
     }
 }
 
