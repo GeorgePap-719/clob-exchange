@@ -21,11 +21,13 @@ class Exchange {
             placeInBook(orderWithPriority)
             return
         }
+        val indexesToRemove = mutableListOf<Int>()
         var orderQuantity = order.quantity
         // Try to match aggressively.
-        for ((index, sell) in sellBook.withIndex()) {
+        for (index in 0..<sellBook.size) {
+            val sell = sellBook[index]
             // Skip higher prices as it is the buyer's limit.
-            if (order.limitPrice > sell.limitPrice) continue
+            if (order.limitPrice < sell.limitPrice) continue
             val output = createTradeOutput(
                 BuyOrder(
                     id = order.id,
@@ -40,7 +42,7 @@ class Exchange {
                 invokeTradeHandler(output)
                 // Update sell with new values.
                 if (orderQuantity == sell.quantity) {
-                    sellBook.removeAt(index)
+                    indexesToRemove.add(index)
                 } else {
                     val orderWithPriority = SellOrderWithPriority(
                         id = sell.id,
@@ -53,12 +55,13 @@ class Exchange {
                     sellBook[index] = orderWithPriority
                 }
                 // The order has been completed.
+                indexesToRemove.forEach { sellBook.removeAt(it)}
                 return
             } else {
                 // Call onTrade, to print for success trade.
                 invokeTradeHandler(output)
                 orderQuantity -= sell.quantity
-                sellBook.removeAt(index)
+                indexesToRemove.add(index)
             }
         }
         // In this case order has leftover quantities,
@@ -68,6 +71,7 @@ class Exchange {
             val orderWithPriority = attachPriority(buyOrder)
             placeInBook(orderWithPriority)
         }
+        indexesToRemove.forEach { sellBook.removeAt(it)}
     }
 
     private fun placeInBook(order: BuyOrderWithPriority) {
@@ -96,6 +100,8 @@ class Exchange {
             placeInBook(orderWithPriority)
             return
         }
+        // TODO: add comments why we need this.
+        val indexesToRemove = mutableListOf<Int>()
         var orderQuantity = order.quantity
         // Try to match aggressively.
         for (index in 0..<buyBook.size) {
@@ -113,7 +119,7 @@ class Exchange {
             if (orderQuantity <= buy.quantity) {
                 invokeTradeHandler(output)
                 if (orderQuantity == buy.quantity) {
-                    buyBook.removeAt(index)
+                    indexesToRemove.add(index)
                 } else {
                     val orderWithPriority = BuyOrderWithPriority(
                         id = buy.id,
@@ -126,22 +132,23 @@ class Exchange {
                     buyBook[index] = orderWithPriority
                 }
                 // The order has been completed.
+                indexesToRemove.forEach { buyBook.removeAt(it)}
                 return
             } else {
                 invokeTradeHandler(output)
                 orderQuantity -= buy.quantity
-                //TODO: what happens in the collection,
-                // we remove this?
-                buyBook.removeAt(index)
+                indexesToRemove.add(index)
             }
         }
-        // In this case order has leftover quantities,
+        // In this case order has leftover quantities, // TODO --> this includes the case where we do not have match in price.
         // place order in the book, for future matching.
         if (orderQuantity > 0) {
             val sellOrder = SellOrder(order.id, order.limitPrice, orderQuantity)
             val orderWithPriority = attachPriority(sellOrder)
             placeInBook(orderWithPriority)
         }
+        // Cleanup.
+        indexesToRemove.forEach { buyBook.removeAt(it)}
     }
 
     private fun placeInBook(order: SellOrderWithPriority) {
