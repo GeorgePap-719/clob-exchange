@@ -3,7 +3,6 @@ package org.example.bitvavo.jvm
 /**
  * Represents a CLOB.
  */
-// Notes: I have to break the matching order pattern.
 // The function are not thread-safe.
 //TODO: add kdocs
 class Exchange {
@@ -25,12 +24,20 @@ class Exchange {
         var orderQuantity = order.quantity
         // Try to match aggressively.
         for ((index, sell) in sellBook.withIndex()) {
+            // Skip higher prices as it is the buyer's limit.
             if (order.limitPrice > sell.limitPrice) continue
-            // Update order
+            val output = createTradeOutput(
+                BuyOrder(
+                    id = order.id,
+                    limitPrice = order.limitPrice,
+                    quantity = orderQuantity
+                ),
+                sell
+            )
             //TODO: maybe this will be more readable with `when`.
             if (orderQuantity <= sell.quantity) {
-                // Call onTrade, to print for success trade.
-                invokeTradeHandler("TODO")
+                // Update order
+                invokeTradeHandler(output)
                 // Update sell with new values.
                 if (orderQuantity == sell.quantity) {
                     sellBook.removeAt(index)
@@ -49,13 +56,13 @@ class Exchange {
                 return
             } else {
                 // Call onTrade, to print for success trade.
-                invokeTradeHandler("TODO")
+                invokeTradeHandler(output)
                 orderQuantity -= sell.quantity
                 sellBook.removeAt(index)
             }
         }
-        // In case the order was either not fulfilled or completed,
-        // place it in the book.
+        // In this case order has leftover quantities,
+        // place order in the book, for future matching.
         if (orderQuantity > 0) {
             val buyOrder = BuyOrder(order.id, order.limitPrice, orderQuantity)
             val orderWithPriority = attachPriority(buyOrder)
@@ -90,12 +97,20 @@ class Exchange {
             return
         }
         var orderQuantity = order.quantity
+        // Try to match aggressively.
         for ((index, buy) in buyBook.withIndex()) {
-            // Skip lower prices as it is the selle's limit.
+            // Skip lower prices as it is the seller's limit.
             if (order.limitPrice < buy.limitPrice) continue
+            val output = createTradeOutput(
+                SellOrder(
+                    id = order.id,
+                    limitPrice = order.limitPrice,
+                    quantity = orderQuantity
+                ),
+                buy
+            )
             if (orderQuantity <= buy.quantity) {
-                // Call onTrade, to print for success trade.
-                invokeTradeHandler("TODO")
+                invokeTradeHandler(output)
                 if (orderQuantity == buy.quantity) {
                     buyBook.removeAt(index)
                 } else {
@@ -113,13 +128,13 @@ class Exchange {
                 return
             } else {
                 // Call onTrade, to print for success trade.
-                invokeTradeHandler("TODO")
+                invokeTradeHandler(output)
                 orderQuantity -= buy.quantity
                 buyBook.removeAt(index)
             }
         }
-        // In case the order was either not fulfilled or completed,
-        // place it in the book. ----> TODO improve comment
+        // In this case order has leftover quantities,
+        // place order in the book, for future matching.
         if (orderQuantity > 0) {
             val sellOrder = SellOrder(order.id, order.limitPrice, orderQuantity)
             val orderWithPriority = attachPriority(sellOrder)
@@ -146,9 +161,25 @@ class Exchange {
         )
     }
 
-    private fun invokeTradeHandler(tradeInfo: String /* will think about it */) {
+    // Trade output must indicate the aggressing order-id,
+    // the resting order-id, the price of the match
+    //and the quantity traded, followed by a newline.
+    // format: trade 10006,10001,100,500
+    //TODO: verify if price is correct.
+    private fun createTradeOutput(
+        aggressingOrder: Order,
+        restingOrder: Order
+    ): String {
+        val quantity = aggressingOrder.quantity - restingOrder.quantity
+        val output = """
+            trade ${aggressingOrder.id}, ${restingOrder.id}, ${aggressingOrder.limitPrice}, $quantity
+        """.trimIndent()
+        return output
+    }
+
+    private fun invokeTradeHandler(tradeOutput: String /* will think about it */) {
         val tradeHandler = tradeHandler ?: return
-        tradeHandler(tradeInfo)
+        tradeHandler(tradeOutput)
     }
 
     /**
@@ -172,24 +203,39 @@ class Exchange {
 // maybe it can be turned into constrain in constructor,
 // will think about it later.
 // Price max is 999,999
-data class BuyOrder(val id: String, val limitPrice: Int, val quantity: Int)
+data class BuyOrder(
+    override val id: String,
+    override val limitPrice: Int,
+    override val quantity: Int
+) : Order
 
-data class SellOrder(val id: String, val limitPrice: Int, val quantity: Int)
+data class SellOrder(
+    override val id: String,
+    override val limitPrice: Int,
+    override val quantity: Int
+) : Order
 
 // --- utils ---
 
+// A marker interface
+private interface Order {
+    val id: String
+    val limitPrice: Int
+    val quantity: Int
+}
+
 private data class BuyOrderWithPriority(
-    val id: String,
-    val limitPrice: Int,
-    val quantity: Int,
+    override val id: String,
+    override val limitPrice: Int,
+    override val quantity: Int,
     val priority: Int
-)
+) : Order
 
 private data class SellOrderWithPriority(
-    val id: String,
-    val limitPrice: Int,
-    val quantity: Int,
+    override val id: String,
+    override val limitPrice: Int,
+    override val quantity: Int,
     val priority: Int
-)
+) : Order
 
 private typealias TradeHandler = (input: String) -> Unit
