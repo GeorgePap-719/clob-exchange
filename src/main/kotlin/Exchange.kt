@@ -21,7 +21,7 @@ class Exchange {
      * The `price time priority` order is maintained by sorting the book
      * each time an insertion happens, and using the "priority" variable.
      *
-     * The logic flow for an insert operation is: when we have an order ready
+     * The flow for an insert operation is: when we have an order ready
      * to be placed in the book, we have to attach it priority by using the `attachPriority()`,
      * and then place it in the book by using the `placeInBook()`.
      */
