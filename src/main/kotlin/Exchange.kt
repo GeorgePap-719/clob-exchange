@@ -15,7 +15,17 @@ class Exchange {
     private val buyBook = mutableListOf<BuyOrderWithPriority>()
     private val sellBook = mutableListOf<SellOrderWithPriority>()
 
-    //TODO: add kdocs
+    /*
+     * This counter tracks the total number of orders received.
+     * It is used to define a "time" order for the books.
+     *
+     * The counter is incremented by `attachPriority()` function,
+     * and it should be preferred to create an order with priority.
+     *
+     * NB: The books by themselves do not enforce the counter
+     * to be ever incremented or unique, we have to handle it "manually".
+     * Otherwise, we lose the "time" order priority.
+     */
     private var priority = 0
 
     /**
