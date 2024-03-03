@@ -294,31 +294,45 @@ class Exchange {
     }
 }
 
-//TODO: check for bounds based on expected inputs.
-// I think we are ok with Int, as max input will be: 999,999,999,
-// maybe it can be turned into constrain in constructor,
-// will think about it later.
-// Price max is 999,999
 data class BuyOrder(
     override val id: String,
     override val limitPrice: Int,
     override val quantity: Int
-) : Order
+) : Order {
+    init {
+        require(limitPrice <= 999999) {
+            "The max price is 999999, but got:$limitPrice"
+        }
+        require(quantity <= 999999999) {
+            "The max quantity is 999999999, but got:$quantity"
+        }
+    }
+}
 
 data class SellOrder(
     override val id: String,
     override val limitPrice: Int,
     override val quantity: Int
-) : Order
+) : Order {
+    init {
+        require(limitPrice <= 999999) {
+            "The max price is 999999, but got:$limitPrice"
+        }
+        require(quantity <= 999999999) {
+            "The max quantity is 999999999, but got:$quantity"
+        }
+    }
+}
 
 /**
  * Represents a completed trade.
  * This class is created to make passing and asserting trade-data easier.
  */
 data class Trade(val aggressingOrder: Order, val restingOrder: Order) {
-    // Trade output must indicate the aggressing order-id,
-    // the resting order-id, the price of the match
-    // and the quantity traded, followed by a newline.
+    /**
+     * Returns a [String] that represents the trade's output.
+     * It follows a format of: "aggressing-order-id, resting-order-id, price-match, quantity-traded".
+     */
     fun tradeOutput(): String {
         val quantity = if (aggressingOrder.quantity > restingOrder.quantity) {
             restingOrder.quantity
