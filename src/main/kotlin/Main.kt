@@ -13,7 +13,7 @@ fun main() {
 }
 
 val exchange = Exchange().apply {
-    invokeOnTrade { println(it) }
+    invokeOnTrade { println(it.tradeOutput()) }
 }
 
 // This parser follows a strict format, and in any other case
