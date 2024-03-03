@@ -91,6 +91,32 @@ class ExchangeTest {
     }
 
     @Test
+    fun testMatchingBuyEvent2() {
+        val exchange = Exchange()
+        exchange.assertNoTradeIsHappening()
+        val buyOrder = BuyOrder("10000", 101, 200)
+        val sellOrders = listOf(
+            SellOrder("10001", 100, 200),
+            SellOrder("10002", 99, 50),
+            SellOrder("10003", 98, 50),
+        )
+        exchange.placeSellOrders(sellOrders)
+        val actualTrades = mutableListOf<Trade>()
+        exchange.invokeOnTrade { actualTrades.add(it) }
+        exchange.placeBuyOrder(buyOrder)
+        val newBuyOrder =  BuyOrder("10004", 101, 200)
+        exchange.placeBuyOrder(newBuyOrder)
+        val expectedTrades = listOf(
+            Trade(buyOrder, sellOrders[2]),
+            Trade(BuyOrder("10000", 101, 150), sellOrders[1]),
+            Trade(BuyOrder("10000", 101, 100), sellOrders[0]),
+            Trade(newBuyOrder, SellOrder("10001", 100, 100))
+        )
+        assertTradesMatch(expectedTrades, actualTrades)
+        println(exchange.getOrderBookOutput())
+    }
+
+    @Test
     fun testOrderBookOutput() {
         val exchange = Exchange()
         val buyOrders = listOf(
