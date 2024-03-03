@@ -12,6 +12,7 @@ import java.text.NumberFormat
  * rest on their own side of the book.
  */
 class Exchange {
+    //TODO: add kdoc and the reasoning behind sorting.
     private val buyBook = mutableListOf<BuyOrderWithPriority>()
     private val sellBook = mutableListOf<SellOrderWithPriority>()
 
@@ -43,9 +44,11 @@ class Exchange {
             placeInBook(orderWithPriority)
             return
         }
+        // In the case that we need to remove a resting order,
+        // we will have to store its index and remove it after the iteration is done.
+        // Otherwise, the order of the iteration will break.
         val indexesToRemove = mutableListOf<Int>()
         var orderQuantity = order.quantity
-        // Try to match aggressively.
         for (index in 0..<sellBook.size) {
             val sell = sellBook[index]
             // Skip higher prices as they pass buyer's limit.
@@ -58,12 +61,13 @@ class Exchange {
                 ),
                 sell
             )
-            //TODO: maybe this will be more readable with `when`.
-            if (orderQuantity <= sell.quantity) {
-                invokeTradeHandler(output)
-                if (orderQuantity == sell.quantity) {
-                    indexesToRemove.add(index)
-                } else {
+            // A trade has happened, "log" it and update values accordingly.
+            invokeTradeHandler(output)
+            when {
+                orderQuantity < sell.quantity -> {
+                    // Do not increase priority here as we have not
+                    // used all the shared from this resting order,
+                    // update with new quantity and place it back in the book.
                     val orderWithPriority = SellOrderWithPriority(
                         id = sell.id,
                         limitPrice = sell.limitPrice,
@@ -73,14 +77,22 @@ class Exchange {
                     // Since price and priority stay the same,
                     // there is no need sort the arrayList.
                     sellBook[index] = orderWithPriority
+                    // The order has been completed.
+                    cleanupIndexesInSellBook(indexesToRemove)
+                    return
                 }
-                // The order has been completed.
-                cleanupIndexesInSellBook(indexesToRemove)
-                return
-            } else {
-                invokeTradeHandler(output)
-                orderQuantity -= sell.quantity
-                indexesToRemove.add(index)
+
+                orderQuantity == sell.quantity -> {
+                    indexesToRemove.add(index)
+                    // The order has been completed.
+                    cleanupIndexesInSellBook(indexesToRemove)
+                    return
+                }
+
+                else -> {
+                    orderQuantity -= sell.quantity
+                    indexesToRemove.add(index)
+                }
             }
         }
         // Any remaining order quantity, either in case there is no match
@@ -130,10 +142,12 @@ class Exchange {
             placeInBook(orderWithPriority)
             return
         }
-        // TODO: add comments why we need this.
+        // In the case that we need to remove a resting order,
+        // we will have to store its index and remove it after the iteration is done.
+        // Otherwise, the order of the iteration will break.
         val indexesToRemove = mutableListOf<Int>()
         var orderQuantity = order.quantity
-        // Try to match aggressively.
+        // Try to find match aggressively.
         for (index in 0..<buyBook.size) {
             val buy = buyBook[index]
             // Skip lower prices as it is the seller's limit.
