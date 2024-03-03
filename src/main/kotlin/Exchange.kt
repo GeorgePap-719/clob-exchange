@@ -147,7 +147,6 @@ class Exchange {
         // Otherwise, the order of the iteration will break.
         val indexesToRemove = mutableListOf<Int>()
         var orderQuantity = order.quantity
-        // Try to find match aggressively.
         for (index in 0..<buyBook.size) {
             val buy = buyBook[index]
             // Skip lower prices as it is the seller's limit.
@@ -160,11 +159,13 @@ class Exchange {
                 ),
                 buy
             )
-            if (orderQuantity <= buy.quantity) {
-                invokeTradeHandler(output)
-                if (orderQuantity == buy.quantity) {
-                    indexesToRemove.add(index)
-                } else {
+            // A trade has happened, "log" it and update values accordingly.
+            invokeTradeHandler(output)
+            when {
+                orderQuantity < buy.quantity -> {
+                    // Do not increase priority here as we have not
+                    // used all the shared from this resting order,
+                    // update with new quantity and place it back in the book.
                     val orderWithPriority = BuyOrderWithPriority(
                         id = buy.id,
                         limitPrice = buy.limitPrice,
@@ -174,14 +175,22 @@ class Exchange {
                     // Since price and priority stay the same,
                     // there is no need sort the arrayList.
                     buyBook[index] = orderWithPriority
+                    // The order has been completed.
+                    cleanupIndexesInBuyBook(indexesToRemove)
+                    return
                 }
-                // The order has been completed.
-                cleanupIndexesInBuyBook(indexesToRemove)
-                return
-            } else {
-                invokeTradeHandler(output)
-                orderQuantity -= buy.quantity
-                indexesToRemove.add(index)
+
+                orderQuantity == buy.quantity -> {
+                    indexesToRemove.add(index)
+                    // The order has been completed.
+                    cleanupIndexesInBuyBook(indexesToRemove)
+                    return
+                }
+
+                else -> {
+                    orderQuantity -= buy.quantity
+                    indexesToRemove.add(index)
+                }
             }
         }
         // Any remaining order quantity, either in case there is no match
