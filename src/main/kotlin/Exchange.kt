@@ -18,13 +18,15 @@ class Exchange {
     //TODO: add kdocs
     private var priority = 0
 
+    /**
+     * Stores the trade handler installed by [invokeOnTrade] .
+     */
     private var tradeHandler: TradeHandler? = null
 
     /**
-     * Places a [buy-order][BuyOrder] in the book,
-     * and tries to find a match using `price time priority`.
+     * Places a [buy-order][BuyOrder] and tries immediately
+     * to find a match against the `resting` orders, using `price time priority`.
      */
-    //TODO: fix kdoc
     fun placeBuyOrder(order: BuyOrder) {
         if (sellBook.isEmpty()) {
             val orderWithPriority = attachPriority(order)
@@ -109,10 +111,9 @@ class Exchange {
     }
 
     /**
-     * Places a [sell-order][SellOrder] in the book,
-     * and tries to find a match using `price time priority`.
+     * Places a [sell-order][SellOrder] and tries immediately
+     * to find a match against the `resting` orders, using `price time priority`.
      */
-    //TODO: fix kdoc
     fun placeSellOrder(order: SellOrder) {
         if (buyBook.isEmpty()) {
             val orderWithPriority = attachPriority(order)
@@ -208,6 +209,9 @@ class Exchange {
 
     /**
      * Registers a [handler] to invoke when a trade takes place.
+     *
+     * It is possible to change the underlying [handler] multiple times during the lifetime of this
+     * [Exchange].
      */
     fun invokeOnTrade(handler: (input: Trade) -> Unit) {
         tradeHandler = handler
@@ -218,12 +222,12 @@ class Exchange {
      * It follows a format of: "000,000,000 000000 | 000000 000,000,000", and when a value is too
      * small to cover the reserved area is padded with spaces.
      */
+    // Maybe this can be improved?, TODO if there is enough time
     fun getOrderBookOutput(): String {
         val formatter = NumberFormat.getIntegerInstance()
         val builder = StringBuilder()
         var buyBookIndex = 0
         var sellBookIndex = 0
-        // Maybe this can be improved?, TODO if there is enough time
         while (buyBookIndex < buyBook.size || sellBookIndex < sellBook.size) {
             val buy = if (buyBookIndex < buyBook.size) buyBook[buyBookIndex] else null
             var buyQuantityFormat = buy?.let { formatter.format(buy.quantity) } ?: ""
@@ -310,6 +314,7 @@ data class Trade(val aggressingOrder: Order, val restingOrder: Order) {
  */
 interface Order {
     val id: String
+
     /**
      * Represents the worst possible price the trader will trade at.
      */
