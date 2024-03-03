@@ -12,7 +12,19 @@ import java.text.NumberFormat
  * rest on their own side of the book.
  */
 class Exchange {
-    //TODO: add kdoc and the reasoning behind sorting.
+    /*
+     * These variables are essentially the two sides of the book, where
+     * each order resides. They maintain a `price time priority` order,
+     * this way each incoming order can just iterate the corresponding book
+     * to find a match.
+     *
+     * The `price time priority` order is maintained by sorting the book
+     * each time an insertion happens, and using the "priority" variable.
+     *
+     * The logic flow for an insert operation is: when we have an order ready
+     * to be placed in the book, we have to attach it priority by using the `attachPriority()`,
+     * and then place it in the book by using the `placeInBook()`.
+     */
     private val buyBook = mutableListOf<BuyOrderWithPriority>()
     private val sellBook = mutableListOf<SellOrderWithPriority>()
 
