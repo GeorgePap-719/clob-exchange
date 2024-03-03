@@ -49,7 +49,7 @@ class Exchange {
         // Otherwise, the order of the iteration will break.
         val indexesToRemove = mutableListOf<Int>()
         var orderQuantity = order.quantity
-        for (index in 0..<sellBook.size) {
+        for (index in sellBook.indices) {
             val sell = sellBook[index]
             // Skip higher prices as they pass buyer's limit.
             if (order.limitPrice < sell.limitPrice) continue
@@ -71,7 +71,7 @@ class Exchange {
                     val orderWithPriority = SellOrderWithPriority(
                         id = sell.id,
                         limitPrice = sell.limitPrice,
-                        quantity = sell.quantity - order.quantity,
+                        quantity = sell.quantity - orderQuantity,
                         priority = sell.priority
                     )
                     // Since price and priority stay the same,
@@ -147,7 +147,7 @@ class Exchange {
         // Otherwise, the order of the iteration will break.
         val indexesToRemove = mutableListOf<Int>()
         var orderQuantity = order.quantity
-        for (index in 0..<buyBook.size) {
+        for (index in buyBook.indices) {
             val buy = buyBook[index]
             // Skip lower prices as it is the seller's limit.
             if (order.limitPrice > buy.limitPrice) continue
