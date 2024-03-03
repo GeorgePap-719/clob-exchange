@@ -1,11 +1,54 @@
 package org.example.bitvavo.jvm
 
 fun main() {
-    println("Hello World!")
-    val input = readln()
-    println(input + "readln succeeded")
+    var order: String? = readlnOrNull()
+        ?: throw IllegalArgumentException("Input is empty")
+    while (order != null) {
+        placeOrder(order)
+        order = readlnOrNull()
+    }
+    val output = exchange.getOrderBookOutput()
+    if (output.isBlank()) return
+    println(output)
+}
 
-    val exchange = Exchange()
-    exchange.invokeOnTrade { println(it) }
+val exchange = Exchange().apply {
+    invokeOnTrade { println(it) }
+}
 
+// This parser follows a strict format, and in any other case
+// it is throwing an `IllegalArgumentException` with the corresponding message.
+// Format: "order-id, side, price, quantity".
+// Note that the values are separated with a comma.
+fun placeOrder(line: String) {
+    require(line.isNotBlank()) { "Input line is empty" }
+    val inputs = line.split(',')
+    require(inputs.size == 4) {
+        "The expected number of fields are 4, but got:${inputs.size}"
+    }
+    val orderId = inputs[0]
+    val side = inputs[1]
+    val price = inputs[2].toIntOrNull()
+        ?: throw IllegalArgumentException(
+            "Price field is expected to be type of int but got:${inputs[2]}"
+        )
+    val quantity = inputs[3].toIntOrNull()
+        ?: throw IllegalArgumentException(
+            "Quantity field is expected to be type of int but got:${inputs[3]}"
+        )
+    when (side) {
+        "B" -> {
+            val order = BuyOrder(id = orderId, limitPrice = price, quantity = quantity)
+            exchange.placeBuyOrder(order)
+        }
+
+        "S" -> {
+            val order = SellOrder(id = orderId, limitPrice = price, quantity = quantity)
+            exchange.placeSellOrder(order)
+        }
+
+        else -> throw IllegalArgumentException(
+            "Side field is expected to be value either of `B` or `S`, but got:$side"
+        )
+    }
 }
