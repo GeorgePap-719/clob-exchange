@@ -306,7 +306,7 @@ data class Trade(val aggressingOrder: Order, val restingOrder: Order) {
 
 /**
  * Represents an order to be placed in the exchange.
- * This interface is created to support the creation of [Trade] class.
+ * This interface is a helper for the [Trade] class to make the code easier to read.
  */
 interface Order {
     val id: String
