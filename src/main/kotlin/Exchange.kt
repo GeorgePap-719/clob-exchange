@@ -283,7 +283,14 @@ class Exchange {
         return builder.toString()
     }
 
-    private fun getLineOutputFor(index: Int, book: List<Order>, padStart: Boolean): String {
+    private fun getLineOutputFor(
+        index: Int,
+        book: List<Order>,
+        /* Indicates in which side the padding should be applied.
+         By extension, this also indicates whether this is a buy
+         or sell order. */
+        padStart: Boolean
+    ): String {
         val order = book.getOrNull(index)
         var quantity = ""
         var price = ""
