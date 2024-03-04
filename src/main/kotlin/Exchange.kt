@@ -268,23 +268,20 @@ class Exchange {
      * small to cover the reserved area is padded with spaces.
      */
     // Maybe this can be improved?, TODO if there is enough time
+    //TODO: The left padding for big numbers is broken.
+    // 999,969,399 999,999 |
+    //   16,000    105 |
+    //   50,000     99 |
+    // 999,969,399 999999 | 999999 999,969,399
+    // 16,000 105 | 105 16,000
     fun getOrderBookOutput(): String {
-        val formatter = NumberFormat.getIntegerInstance()
         val builder = StringBuilder()
         var buyBookIndex = 0
         var sellBookIndex = 0
         while (buyBookIndex < buyBook.size || sellBookIndex < sellBook.size) {
-            val buy = if (buyBookIndex < buyBook.size) buyBook[buyBookIndex] else null
-            var buyQuantityFormat = buy?.let { formatter.format(buy.quantity) } ?: ""
-            buyQuantityFormat = buyQuantityFormat.padStart(9)
-            var buyPriceFormat = buy?.let { formatter.format(buy.limitPrice) } ?: ""
-            buyPriceFormat = buyPriceFormat.padStart(6)
-            val sell = if (sellBookIndex < sellBook.size) sellBook[sellBookIndex] else null
-            var sellQuantityFormat = sell?.let { formatter.format(sell.quantity) } ?: ""
-            sellQuantityFormat = sellQuantityFormat.padEnd(9)
-            var sellPriceFormat = sell?.let { formatter.format(sell.limitPrice) } ?: ""
-            sellPriceFormat = sellPriceFormat.padEnd(6)
-            val output = "$buyQuantityFormat $buyPriceFormat | $sellPriceFormat $sellQuantityFormat"
+            val buyFormat = getLineOutputFor(buyBookIndex, buyBook, true)
+            val sellFormat = getLineOutputFor(buyBookIndex, buyBook, false)
+            val output = "$buyFormat | $sellFormat"
             builder.append(output)
             builder.append("\n")
             buyBookIndex++
@@ -292,6 +289,27 @@ class Exchange {
         }
         return builder.toString()
     }
+
+    private fun getLineOutputFor(index: Int, book: List<Order>, padStart: Boolean): String {
+        val order = book.getOrNull(index)
+        var quantity = ""
+        var price = ""
+        if (order != null) {
+            quantity = formatter.format(order.quantity)
+            price = order.limitPrice.toString()
+        }
+        return if (padStart) {
+            quantity = quantity.padStart(11)
+            price = price.padStart(6)
+            "$quantity $price"
+        } else {
+            quantity = quantity.padEnd(11)
+            price = price.padEnd(6)
+            "$price $quantity"
+        }
+    }
+
+    private val formatter = NumberFormat.getIntegerInstance()
 }
 
 data class BuyOrder(
