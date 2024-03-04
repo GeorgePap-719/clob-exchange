@@ -48,7 +48,7 @@ fun placeOrder(line: String) {
         }
 
         else -> throw IllegalArgumentException(
-            "Side field is expected to be value either of `B` or `S`, but got:$side"
+            "Side field is expected to be value of either `B` or `S`, but got:$side"
         )
     }
 }
