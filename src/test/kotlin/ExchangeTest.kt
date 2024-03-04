@@ -138,15 +138,14 @@ class ExchangeTest {
         exchange.placeBuyOrder(buyOrders[1])
         exchange.placeSellOrder(sellOrders[3])
         exchange.placeBuyOrder(buyOrders[2])
-        // 999,969,399 999999 | 999999 999,969,399
-//        val expectedTrades = listOf(
-//            Trade(buyOrder, sellOrders[2]),
-//            Trade(BuyOrder("10000", 101, 150), sellOrders[1]),
-//            Trade(BuyOrder("10000", 101, 100), sellOrders[0]),
-//            Trade(newBuyOrder, SellOrder("10001", 100, 100))
-//        )
-//        assertTradesMatch(expectedTrades, actualTrades)
-        println(exchange.getOrderBookOutput())
+        val expectedTrades = listOf(
+            Trade(sellOrders[0], buyOrders[0]),
+            Trade(sellOrders[1], BuyOrder("10000", 999999, 999979999)),
+            Trade(sellOrders[2], BuyOrder("10000", 999999, 999979499)),
+            Trade(sellOrders[3], BuyOrder("10000", 999999, 999969499)),
+        )
+        println("quantity :${expectedTrades[3].quantity}")
+        assertTradesMatch(expectedTrades, actualTrades)
     }
 
     @Test
@@ -173,8 +172,8 @@ private fun Exchange.assertNoTradeIsHappening() {
 }
 
 private fun assertTradesMatch(expected: List<Trade>, actual: List<Trade>) {
-    if (actual.size > expected.size) {
-        fail("Actual trades are more than the expected-size:${expected.size}")
+    if (actual.size != expected.size) {
+        fail("Expected size is ${expected.size}, but actual is:${actual.size}")
     }
     for (index in expected.indices) {
         assertEquals(expected[index], actual[index])

@@ -350,19 +350,24 @@ data class SellOrder(
  */
 data class Trade(val aggressingOrder: Order, val restingOrder: Order) {
     /**
+     * The price of the match.
+     */
+    val price: Int = restingOrder.limitPrice
+    /**
+     * The quantity traded.
+     */
+    val quantity = if (aggressingOrder.quantity > restingOrder.quantity) {
+        restingOrder.quantity
+    } else {
+        aggressingOrder.quantity
+    }
+
+    /**
      * Returns a [String] that represents the trade's output.
      * It follows a format of: "aggressing-order-id, resting-order-id, price-match, quantity-traded".
      */
     fun tradeOutput(): String {
-        val quantity = if (aggressingOrder.quantity > restingOrder.quantity) {
-            restingOrder.quantity
-        } else {
-            aggressingOrder.quantity
-        }
-        val output = """
-            trade ${aggressingOrder.id}, ${restingOrder.id}, ${restingOrder.limitPrice}, $quantity
-        """.trimIndent()
-        return output
+        return "trade ${aggressingOrder.id}, ${restingOrder.id}, $price, $quantity"
     }
 
     // We care only for the actual content of each trade,
