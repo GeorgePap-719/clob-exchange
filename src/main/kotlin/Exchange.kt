@@ -266,6 +266,8 @@ class Exchange {
      * Returns a [String] that represents the order's book output.
      * It follows a format of: "000,000,000 000000 | 000000 000,000,000", and when a value is too
      * small to cover the reserved area is padded with spaces.
+     *
+     * In case the book is empty it returns an empty [String].
      */
     fun getOrderBookOutput(): String {
         val builder = StringBuilder()
