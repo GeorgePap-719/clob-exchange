@@ -299,11 +299,11 @@ class Exchange {
             price = order.limitPrice.toString()
         }
         return if (padStart) {
-            quantity = quantity.padStart(11)
+            quantity = quantity.padStart(12)
             price = price.padStart(6)
             "$quantity $price"
         } else {
-            quantity = quantity.padEnd(11)
+            quantity = quantity.padEnd(12)
             price = price.padEnd(6)
             "$price $quantity"
         }
