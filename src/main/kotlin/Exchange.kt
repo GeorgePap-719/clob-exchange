@@ -275,7 +275,7 @@ class Exchange {
         var sellBookIndex = 0
         while (buyBookIndex < buyBook.size || sellBookIndex < sellBook.size) {
             val buyFormat = getLineOutputFor(buyBookIndex, buyBook, true)
-            val sellFormat = getLineOutputFor(buyBookIndex, buyBook, false)
+            val sellFormat = getLineOutputFor(sellBookIndex, sellBook, false)
             val output = "$buyFormat | $sellFormat"
             builder.append(output)
             builder.append("\n")

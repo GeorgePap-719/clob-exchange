@@ -117,6 +117,39 @@ class ExchangeTest {
     }
 
     @Test
+    fun testComplexScenario() {
+        val exchange = Exchange()
+        exchange.assertNoTradeIsHappening()
+        val buyOrders = listOf(
+            BuyOrder("10000", 999999, 999999999),
+            BuyOrder("10003", 99, 50000),
+            BuyOrder("10006", 105, 16000),
+        )
+        val sellOrders = listOf(
+            SellOrder("10005", 105, 20000),
+            SellOrder("10001", 100, 500),
+            SellOrder("10002", 100, 10000),
+            SellOrder("10004", 103, 100),
+        )
+        val actualTrades = mutableListOf<Trade>()
+        exchange.invokeOnTrade { actualTrades.add(it) }
+        exchange.placeBuyOrder(buyOrders[0])
+        exchange.placeSellOrders(sellOrders.subList(0, 3))
+        exchange.placeBuyOrder(buyOrders[1])
+        exchange.placeSellOrder(sellOrders[3])
+        exchange.placeBuyOrder(buyOrders[2])
+        // 999,969,399 999999 | 999999 999,969,399
+//        val expectedTrades = listOf(
+//            Trade(buyOrder, sellOrders[2]),
+//            Trade(BuyOrder("10000", 101, 150), sellOrders[1]),
+//            Trade(BuyOrder("10000", 101, 100), sellOrders[0]),
+//            Trade(newBuyOrder, SellOrder("10001", 100, 100))
+//        )
+//        assertTradesMatch(expectedTrades, actualTrades)
+        println(exchange.getOrderBookOutput())
+    }
+
+    @Test
     fun testOrderBookOutput() {
         val exchange = Exchange()
         val buyOrders = listOf(
