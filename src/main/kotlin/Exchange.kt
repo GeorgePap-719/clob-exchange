@@ -267,13 +267,6 @@ class Exchange {
      * It follows a format of: "000,000,000 000000 | 000000 000,000,000", and when a value is too
      * small to cover the reserved area is padded with spaces.
      */
-    // Maybe this can be improved?, TODO if there is enough time
-    //TODO: The left padding for big numbers is broken.
-    // 999,969,399 999,999 |
-    //   16,000    105 |
-    //   50,000     99 |
-    // 999,969,399 999999 | 999999 999,969,399
-    // 16,000 105 | 105 16,000
     fun getOrderBookOutput(): String {
         val builder = StringBuilder()
         var buyBookIndex = 0
