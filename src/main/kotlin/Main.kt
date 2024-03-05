@@ -3,9 +3,12 @@ package org.example.bitvavo.jvm
 fun main() {
     var order: String? = readlnOrNull()
         ?: throw IllegalArgumentException("Input is empty")
+    var line = 1
     while (order != null) {
+        require(order.isNotBlank()) { "Input line $line is empty" }
         placeOrder(order)
         order = readlnOrNull()
+        line++
     }
     val output = exchange.getOrderBookOutput()
     if (output.isBlank()) return
@@ -21,7 +24,6 @@ val exchange = Exchange().apply {
 // Format: "order-id, side, price, quantity".
 // Note that the values are separated with a comma.
 fun placeOrder(line: String) {
-    require(line.isNotBlank()) { "Input line is empty" }
     val inputs = line.split(',')
     require(inputs.size == 4) {
         "The expected number of fields are 4, but got:${inputs.size}"
