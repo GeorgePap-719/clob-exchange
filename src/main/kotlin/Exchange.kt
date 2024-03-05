@@ -305,6 +305,10 @@ class Exchange {
             price = price.padStart(6)
             "$quantity $price"
         } else {
+            // Note: Even though we should only use left padding,
+            // here we have to use right padding to avoid having too many whitespaces
+            // between the `|` operator in the final output. Since it will be closer
+            // to the final image from the examples.
             quantity = quantity.padEnd(12)
             price = price.padEnd(6)
             "$price $quantity"
