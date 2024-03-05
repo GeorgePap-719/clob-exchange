@@ -368,7 +368,7 @@ data class Trade(val aggressingOrder: Order, val restingOrder: Order) {
      * It follows a format of: "aggressing-order-id, resting-order-id, price-match, quantity-traded".
      */
     fun tradeOutput(): String {
-        return "trade ${aggressingOrder.id}, ${restingOrder.id}, $price, $quantity"
+        return "trade ${aggressingOrder.id},${restingOrder.id},$price,$quantity"
     }
 
     // We care only for the actual content of each trade,
