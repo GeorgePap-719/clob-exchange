@@ -21,7 +21,7 @@ val exchange = Exchange().apply {
 
 // This parser follows a strict format, and in any other case
 // it is throwing an `IllegalArgumentException` with the corresponding message.
-// Format: "order-id, side, price, quantity".
+// Format: "order-id,side,price,quantity".
 // Note that the values are separated with a comma.
 fun placeOrder(line: String) {
     val inputs = line.split(',')
