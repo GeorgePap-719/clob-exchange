@@ -2,6 +2,7 @@ package org.example.bitvavo.jvm
 
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertTrue
 import kotlin.test.fail
 
 class ExchangeTest {
@@ -104,7 +105,7 @@ class ExchangeTest {
         val actualTrades = mutableListOf<Trade>()
         exchange.invokeOnTrade { actualTrades.add(it) }
         exchange.placeBuyOrder(buyOrder)
-        val newBuyOrder =  BuyOrder("10004", 101, 200)
+        val newBuyOrder = BuyOrder("10004", 101, 200)
         exchange.placeBuyOrder(newBuyOrder)
         val expectedTrades = listOf(
             Trade(buyOrder, sellOrders[2]),
@@ -113,43 +114,62 @@ class ExchangeTest {
             Trade(newBuyOrder, SellOrder("10001", 100, 100))
         )
         assertTradesMatch(expectedTrades, actualTrades)
-        println(exchange.getOrderBookOutput())
     }
 
     @Test
-    fun testComplexScenario() {
+    fun testMatchAllEvents() {
         val exchange = Exchange()
         exchange.expectNoTrade()
         val buyOrders = listOf(
             BuyOrder("10000", 999999, 999999999),
             BuyOrder("10003", 99, 50000),
             BuyOrder("10006", 105, 16000),
+            BuyOrder("10009", 110, 100),
         )
         val sellOrders = listOf(
             SellOrder("10005", 105, 20000),
             SellOrder("10001", 100, 500),
             SellOrder("10002", 100, 10000),
             SellOrder("10004", 103, 100),
+            SellOrder("10007", 103, 999969399),
+            SellOrder("10008", 106, 100),
+            SellOrder("10010", 99, 66000),
         )
         val actualTrades = mutableListOf<Trade>()
+        // The book is empty, no trade should happen,
+        // and order should be placed in the book.
         exchange.placeBuyOrder(buyOrders[0])
         exchange.invokeOnTrade { actualTrades.add(it) }
+        // Place 3 sell orders where all find a match.
+        // `buyOrder[0]` has a limit-price of 999999, that means
+        // whichever sell order we place it will be matched with this order.
         exchange.placeSellOrders(sellOrders.subList(0, 3))
         exchange.expectNoTrade()
-        exchange.placeBuyOrder(buyOrders[1])
+        exchange.placeBuyOrder(buyOrders[1]) // no sells in book right now
         exchange.invokeOnTrade { actualTrades.add(it) }
-        exchange.placeSellOrder(sellOrders[3])
+        exchange.placeSellOrder(sellOrders[3]) // matches against `buyOrder[0]`
         exchange.expectNoTrade()
-        exchange.placeBuyOrder(buyOrders[2])
-        // TODO: clear all book
-        //exchange.pla
+        exchange.placeBuyOrder(buyOrders[2]) // no sells in book right now
+        exchange.invokeOnTrade { actualTrades.add(it) }
+        exchange.placeSellOrder(sellOrders[4]) // matches against `buyOrder[0]` and clears it out
+        exchange.expectNoTrade()
+        exchange.placeSellOrder(sellOrders[5]) // no buys in book right now
+        exchange.invokeOnTrade { actualTrades.add(it) }
+        exchange.placeBuyOrder(buyOrders[3]) // matches against `sellOrder[5]`
+        // Note now the book has two buy orders with ids `10003` and `10006`.
+        exchange.placeSellOrder(sellOrders[6]) // matches against `buyOrder[2]` and `buyOrder[1]`
         val expectedTrades = listOf(
             Trade(sellOrders[0], buyOrders[0]),
             Trade(sellOrders[1], BuyOrder("10000", 999999, 999979999)),
             Trade(sellOrders[2], BuyOrder("10000", 999999, 999979499)),
             Trade(sellOrders[3], BuyOrder("10000", 999999, 999969499)),
+            Trade(sellOrders[4], BuyOrder("10000", 999999, 999969399)),
+            Trade(BuyOrder("10009", 110, 100), sellOrders[5]),
+            Trade(sellOrders[6], buyOrders[2]),
+            Trade(SellOrder("10010", 99, 50000), buyOrders[1]),
         )
         assertTradesMatch(expectedTrades, actualTrades)
+        assertTrue(exchange.getOrderBookOutput().isEmpty()) // book should be empty now
     }
 
     @Test
