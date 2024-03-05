@@ -78,7 +78,7 @@ class Exchange {
             when {
                 orderQuantity < sell.quantity -> {
                     // Do not increase priority here as we have not
-                    // used all the shared from this resting order,
+                    // used all the shares from this resting order,
                     // update with new quantity and place it back in the book.
                     val orderWithPriority = SellOrderWithPriority(
                         id = sell.id,
@@ -176,7 +176,7 @@ class Exchange {
             when {
                 orderQuantity < buy.quantity -> {
                     // Do not increase priority here as we have not
-                    // used all the shared from this resting order,
+                    // used all the shares from this resting order,
                     // update with new quantity and place it back in the book.
                     val orderWithPriority = BuyOrderWithPriority(
                         id = buy.id,
