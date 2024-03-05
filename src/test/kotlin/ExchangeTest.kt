@@ -1,5 +1,6 @@
 package org.example.bitvavo.jvm
 
+import java.security.MessageDigest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
@@ -175,6 +176,65 @@ class ExchangeTest {
         exchange.placeSellOrder(sellOrder2)
         val output = exchange.getOrderBookOutput()
         println(output)
+    }
+
+    @Test
+    fun testDeterminismScenario() {
+        val exchange = Exchange()
+        exchange.expectNoTrade()
+        val buyOrders = listOf(
+            BuyOrder("10000", 98, 25500),
+            BuyOrder("10003", 99, 50000),
+            BuyOrder("10006", 105, 16000)
+        )
+        val sellOrders = listOf(
+            SellOrder("10005", 105, 20000),
+            SellOrder("10001", 100, 500),
+            SellOrder("10002", 100, 10000),
+            SellOrder("10004", 103, 100)
+        )
+        exchange.placeBuyOrder(buyOrders[0])
+        exchange.placeSellOrder(sellOrders[0])
+        exchange.placeSellOrder(sellOrders[1])
+        exchange.placeSellOrder(sellOrders[2])
+        exchange.placeBuyOrder(buyOrders[1])
+        exchange.placeSellOrder(sellOrders[3])
+        exchange.invokeOnTrade {}
+        exchange.placeBuyOrder(buyOrders[2])
+        val output = exchange.getOrderBookOutput()
+        val hash = output.hashStringMD5()
+        assertEquals("373712dd293720b5512cbc07ad10d253", hash)
+    }
+
+    @Test
+    fun testDeterminismScenarioWithNoMatch() {
+        val exchange = Exchange()
+        exchange.expectNoTrade()
+        val buyOrders = listOf(
+            BuyOrder("10000", 98, 25500),
+            BuyOrder("10003", 99, 50000),
+        )
+        val sellOrders = listOf(
+            SellOrder("10005", 105, 20000),
+            SellOrder("10001", 100, 500),
+            SellOrder("10002", 100, 10000),
+            SellOrder("10004", 103, 100)
+        )
+        exchange.placeBuyOrder(buyOrders[0])
+        exchange.placeSellOrder(sellOrders[0])
+        exchange.placeSellOrder(sellOrders[1])
+        exchange.placeSellOrder(sellOrders[2])
+        exchange.placeBuyOrder(buyOrders[1])
+        exchange.placeSellOrder(sellOrders[3])
+        val output = exchange.getOrderBookOutput()
+        val hash = output.hashStringMD5()
+        assertEquals("a03051214b14de693d9ef1e99d56298a", hash)
+    }
+
+    @OptIn(ExperimentalStdlibApi::class)
+    private fun String.hashStringMD5(): String {
+        val md5 = MessageDigest.getInstance("MD5")
+        return md5.digest(this.toByteArray()).toHexString()
     }
 }
 
