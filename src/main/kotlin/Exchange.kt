@@ -353,6 +353,7 @@ data class Trade(val aggressingOrder: Order, val restingOrder: Order) {
      * The price of the match.
      */
     val price: Int = restingOrder.limitPrice
+
     /**
      * The quantity traded.
      */
