@@ -24,6 +24,16 @@ dependencies {
 
 tasks.test {
     useJUnitPlatform()
+    // For info on test execution.
+    afterSuite(KotlinClosure2({ desc: TestDescriptor, result: TestResult ->
+        // Only execute on the outermost suite.
+        if (desc.parent == null) {
+            println("Tests: ${result.testCount}")
+            println("Passed: ${result.successfulTestCount}")
+            println("Failed: ${result.failedTestCount}")
+            println("Skipped: ${result.skippedTestCount}")
+        }
+    }))
 }
 
 kotlin {
