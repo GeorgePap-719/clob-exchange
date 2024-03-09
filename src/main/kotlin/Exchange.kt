@@ -389,7 +389,3 @@ private data class SellOrderWithPriority(
 ) : Order
 
 private typealias TradeHandler = (input: Trade) -> Unit
-
-private fun <T> Iterator<T>.nextOrNull(): T? {
-    return if (hasNext()) next() else null
-}
