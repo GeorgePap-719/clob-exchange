@@ -43,7 +43,7 @@ class Exchange {
      * The counter is incremented by `attachPriority()` function,
      * and it should be preferred when we need to attach priority to an order.
      *
-     * NB: The books by themselves do not enforce the counter
+     * Note that the books by themselves do not enforce the counter
      * to be ever incremented or unique, we have to handle it "manually".
      * Otherwise, we lose the "time" order priority.
      */
