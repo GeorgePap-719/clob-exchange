@@ -1,6 +1,7 @@
 package org.example.bitvavo.jvm
 
 import java.text.NumberFormat
+import java.util.*
 
 /**
  * Represents an exchange, type of central limit order book, where orders are matched using `price time priority`.
@@ -25,8 +26,14 @@ class Exchange {
      * to be placed in the book, we have to attach it priority by using the `attachPriority()`,
      * and then place it in the book by using the `placeInBook()`.
      */
-    private val buyBook = mutableListOf<BuyOrderWithPriority>()
-    private val sellBook = mutableListOf<SellOrderWithPriority>()
+    private val buyBook = PriorityQueue(
+        compareByDescending(BuyOrderWithPriority::limitPrice)
+            .thenBy(BuyOrderWithPriority::priority)
+    )
+    private val sellBook = PriorityQueue(
+        compareBy(SellOrderWithPriority::limitPrice)
+            .thenBy(SellOrderWithPriority::priority)
+    )
 
     /*
      * This counter tracks the total number of orders received.
@@ -51,59 +58,52 @@ class Exchange {
      * to find a match against the `resting` orders, using `price time priority`.
      */
     fun placeBuyOrder(order: BuyOrder) {
-        if (sellBook.isEmpty()) {
-            val orderWithPriority = attachPriority(order)
-            placeInBook(orderWithPriority)
-            return
-        }
-        // In the case that we need to remove a resting order,
-        // we will have to store its index and remove it after the iteration is done.
-        // Otherwise, the order of the iteration will break.
-        val indexesToRemove = mutableListOf<Int>()
         var orderQuantity = order.quantity
-        for (index in sellBook.indices) {
-            val sell = sellBook[index]
-            // Skip higher prices as they pass buyer's limit.
-            if (order.limitPrice < sell.limitPrice) continue
+        while (!sellBook.isEmpty()) {
+            val matchingSellOrder = sellBook.peek()
+            // The first order we find that does not match the limit price we return,
+            // since all other resting orders will also do not match.
+            if (order.limitPrice < matchingSellOrder.limitPrice) {
+                val buyOrder = BuyOrder(order.id, order.limitPrice, orderQuantity)
+                placeInBook(buyOrder)
+                return
+            }
             val output = createTrade(
                 BuyOrder(
                     id = order.id,
                     limitPrice = order.limitPrice,
                     quantity = orderQuantity
                 ),
-                sell
+                matchingSellOrder
             )
             // A trade has happened, "log" it and update values accordingly.
             invokeTradeHandler(output)
             when {
-                orderQuantity < sell.quantity -> {
+                orderQuantity < matchingSellOrder.quantity -> {
                     // Do not increase priority here as we have not
                     // used all the shares from this resting order,
                     // update with new quantity and place it back in the book.
-                    val orderWithPriority = SellOrderWithPriority(
-                        id = sell.id,
-                        limitPrice = sell.limitPrice,
-                        quantity = sell.quantity - orderQuantity,
-                        priority = sell.priority
+                    val newHead = SellOrderWithPriority(
+                        id = matchingSellOrder.id,
+                        limitPrice = matchingSellOrder.limitPrice,
+                        quantity = matchingSellOrder.quantity - orderQuantity,
+                        priority = matchingSellOrder.priority
                     )
-                    // Since price and priority stay the same,
-                    // there is no need sort the arrayList.
-                    sellBook[index] = orderWithPriority
+                    sellBook.remove()
+                    sellBook.add(newHead)
                     // The order has been completed.
-                    cleanupIndexesInSellBook(indexesToRemove)
                     return
                 }
 
-                orderQuantity == sell.quantity -> {
-                    indexesToRemove.add(index)
+                orderQuantity == matchingSellOrder.quantity -> {
+                    sellBook.remove()
                     // The order has been completed.
-                    cleanupIndexesInSellBook(indexesToRemove)
                     return
                 }
 
                 else -> {
-                    orderQuantity -= sell.quantity
-                    indexesToRemove.add(index)
+                    orderQuantity -= matchingSellOrder.quantity
+                    sellBook.remove()
                 }
             }
         }
@@ -111,28 +111,14 @@ class Exchange {
         // or the order has leftovers, place it the order book for future matching.
         if (orderQuantity > 0) {
             val buyOrder = BuyOrder(order.id, order.limitPrice, orderQuantity)
-            val orderWithPriority = attachPriority(buyOrder)
-            placeInBook(orderWithPriority)
-        }
-        cleanupIndexesInSellBook(indexesToRemove)
-    }
-
-    private fun cleanupIndexesInSellBook(indexes: List<Int>) {
-        var removed = 0
-        for (index in indexes) {
-            sellBook.removeAt(index - removed)
-            removed++
+            placeInBook(buyOrder)
         }
     }
 
-    private fun placeInBook(order: BuyOrderWithPriority) {
-        buyBook.add(order)
-        buyBook.sortWith(buyBookComparator)
+    private fun placeInBook(order: BuyOrder) {
+        val orderWithPriority = attachPriority(order)
+        buyBook.add(orderWithPriority)
     }
-
-    private val buyBookComparator =
-        compareByDescending(BuyOrderWithPriority::limitPrice)
-            .thenBy(BuyOrderWithPriority::priority)
 
     private fun attachPriority(order: BuyOrder): BuyOrderWithPriority {
         priority++
@@ -149,59 +135,52 @@ class Exchange {
      * to find a match against the `resting` orders, using `price time priority`.
      */
     fun placeSellOrder(order: SellOrder) {
-        if (buyBook.isEmpty()) {
-            val orderWithPriority = attachPriority(order)
-            placeInBook(orderWithPriority)
-            return
-        }
-        // In the case that we need to remove a resting order,
-        // we will have to store its index and remove it after the iteration is done.
-        // Otherwise, the order of the iteration will break.
-        val indexesToRemove = mutableListOf<Int>()
         var orderQuantity = order.quantity
-        for (index in buyBook.indices) {
-            val buy = buyBook[index]
-            // Skip lower prices as it is the seller's limit.
-            if (order.limitPrice > buy.limitPrice) continue
+        while (!buyBook.isEmpty()) {
+            val matchingBuyOrder = buyBook.peek()
+            // The first order we find that does not match the limit price we return,
+            // since all other resting orders will also do not match.
+            if (order.limitPrice > matchingBuyOrder.limitPrice) {
+                val sellOrder = SellOrder(order.id, order.limitPrice, orderQuantity)
+                placeInBook(sellOrder)
+                return
+            }
             val output = createTrade(
                 SellOrder(
                     id = order.id,
                     limitPrice = order.limitPrice,
                     quantity = orderQuantity
                 ),
-                buy
+                matchingBuyOrder
             )
             // A trade has happened, "log" it and update values accordingly.
             invokeTradeHandler(output)
             when {
-                orderQuantity < buy.quantity -> {
+                orderQuantity < matchingBuyOrder.quantity -> {
                     // Do not increase priority here as we have not
                     // used all the shares from this resting order,
                     // update with new quantity and place it back in the book.
-                    val orderWithPriority = BuyOrderWithPriority(
-                        id = buy.id,
-                        limitPrice = buy.limitPrice,
-                        quantity = buy.quantity - orderQuantity,
-                        priority = buy.priority
+                    val newHead = BuyOrderWithPriority(
+                        id = matchingBuyOrder.id,
+                        limitPrice = matchingBuyOrder.limitPrice,
+                        quantity = matchingBuyOrder.quantity - orderQuantity,
+                        priority = matchingBuyOrder.priority
                     )
-                    // Since price and priority stay the same,
-                    // there is no need sort the arrayList.
-                    buyBook[index] = orderWithPriority
+                    buyBook.remove()
+                    buyBook.add(newHead)
                     // The order has been completed.
-                    cleanupIndexesInBuyBook(indexesToRemove)
                     return
                 }
 
-                orderQuantity == buy.quantity -> {
-                    indexesToRemove.add(index)
+                orderQuantity == matchingBuyOrder.quantity -> {
+                    buyBook.remove()
                     // The order has been completed.
-                    cleanupIndexesInBuyBook(indexesToRemove)
                     return
                 }
 
                 else -> {
-                    orderQuantity -= buy.quantity
-                    indexesToRemove.add(index)
+                    orderQuantity -= matchingBuyOrder.quantity
+                    buyBook.remove()
                 }
             }
         }
@@ -209,28 +188,14 @@ class Exchange {
         // or the order has leftovers, place it the order book for future matching.
         if (orderQuantity > 0) {
             val sellOrder = SellOrder(order.id, order.limitPrice, orderQuantity)
-            val orderWithPriority = attachPriority(sellOrder)
-            placeInBook(orderWithPriority)
-        }
-        cleanupIndexesInBuyBook(indexesToRemove)
-    }
-
-    private fun cleanupIndexesInBuyBook(indexes: List<Int>) {
-        var removed = 0
-        for (index in indexes) {
-            buyBook.removeAt(index - removed)
-            removed++
+            placeInBook(sellOrder)
         }
     }
 
-    private fun placeInBook(order: SellOrderWithPriority) {
-        sellBook.add(order)
-        sellBook.sortWith(sellBookComparator)
+    private fun placeInBook(order: SellOrder) {
+        val orderWithPriority = attachPriority(order)
+        sellBook.add(orderWithPriority)
     }
-
-    private val sellBookComparator =
-        compareBy(SellOrderWithPriority::limitPrice)
-            .thenBy(SellOrderWithPriority::priority)
 
     private fun attachPriority(order: SellOrder): SellOrderWithPriority {
         priority++
@@ -271,34 +236,32 @@ class Exchange {
      */
     fun getOrderBookOutput(): String {
         val builder = StringBuilder()
-        var buyBookIndex = 0
-        var sellBookIndex = 0
-        while (buyBookIndex < buyBook.size || sellBookIndex < sellBook.size) {
-            val buyFormat = getLineOutputFor(buyBookIndex, buyBook, true)
-            val sellFormat = getLineOutputFor(sellBookIndex, sellBook, false)
+        val buyBook = PriorityQueue<Order>(buyBook)
+        val sellBook = PriorityQueue<Order>(sellBook)
+        while (!buyBook.isEmpty() || !sellBook.isEmpty()) {
+            val buyFormat = getLineOutputFor(buyBook, true)
+            val sellFormat = getLineOutputFor(sellBook, false)
             val output = "$buyFormat | $sellFormat"
             builder.append(output)
             builder.append("\n")
-            buyBookIndex++
-            sellBookIndex++
         }
         return builder.toString()
     }
 
     private fun getLineOutputFor(
-        index: Int,
-        book: List<Order>,
+        book: PriorityQueue<Order>,
         /* Indicates in which side the padding should be applied.
          By extension, this also indicates whether this is a buy
          or sell order. */
         padStart: Boolean
     ): String {
-        val order = book.getOrNull(index)
+        val order: Order? = book.peek()
         var quantity = ""
         var price = ""
         if (order != null) {
             quantity = formatter.format(order.quantity)
             price = order.limitPrice.toString()
+            book.remove() // consume element to maintain order
         }
         return if (padStart) {
             quantity = quantity.padStart(12)
@@ -426,3 +389,7 @@ private data class SellOrderWithPriority(
 ) : Order
 
 private typealias TradeHandler = (input: Trade) -> Unit
+
+private fun <T> Iterator<T>.nextOrNull(): T? {
+    return if (hasNext()) next() else null
+}
