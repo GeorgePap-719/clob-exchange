@@ -15,16 +15,17 @@ import java.util.*
 class Exchange {
     /*
      * These variables are essentially the two sides of the book, where
-     * each order resides. They maintain a `price time priority` order,
-     * this way each incoming order can just iterate the corresponding book
-     * to find a match.
-     *
-     * The `price time priority` order is maintained by sorting the book
-     * each time an insertion happens, and using the "priority" variable.
+     * each order resides. They maintain a `price time priority` order.
+     * This means that if the aggressive order does not have a matching price
+     * with the head of the resting orders, then neither will with the rest of the
+     * book.
      *
      * The flow for an insert operation is: when we have an order ready
      * to be placed in the book, we have to attach it priority by using the `attachPriority()`,
-     * and then place it in the book by using the `placeInBook()`.
+     * and then place it in the book.
+     *
+     * NB: These structures cannot be iterated as their iterators
+     * are not guaranteed to traverse the elements in any particular order.
      */
     private val buyBook = PriorityQueue(
         compareByDescending(BuyOrderWithPriority::limitPrice)
