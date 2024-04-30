@@ -11,6 +11,12 @@ import java.util.*
  * As orders are placed in the exchange, they are considered for aggressive matching first against
  * the opposite side of the book. Once this is completed, any remaining order quantity will
  * rest on their own side of the book.
+ *
+ * ### Implementation notes
+ *
+ * This Exchange implementation provides O(log(n)) time for placing orders in book with no match;
+ * O(k * log(n)) for matching orders where `k` is the number of matching orders and `n` the number
+ * of total orders in the opposite side of the book.
  */
 class Exchange {
     /*
