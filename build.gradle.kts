@@ -4,7 +4,7 @@ plugins {
 }
 
 application {
-    mainClass.set("org.example.bitvavo.jvm.MainKt")
+    mainClass.set("org.example.clob.jvm.MainKt")
 }
 
 tasks.named<JavaExec>("run") {

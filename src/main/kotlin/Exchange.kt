@@ -1,4 +1,4 @@
-package org.example.bitvavo.jvm
+package org.example.clob.jvm
 
 import java.text.NumberFormat
 import java.util.*

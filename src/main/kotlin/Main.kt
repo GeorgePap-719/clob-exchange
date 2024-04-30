@@ -1,4 +1,4 @@
-package org.example.bitvavo.jvm
+package org.example.clob.jvm
 
 fun main() {
     var order: String? = readlnOrNull()

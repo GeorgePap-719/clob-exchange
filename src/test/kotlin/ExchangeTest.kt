@@ -1,4 +1,4 @@
-package org.example.bitvavo.jvm
+package org.example.clob.jvm
 
 import java.security.MessageDigest
 import kotlin.test.Test
